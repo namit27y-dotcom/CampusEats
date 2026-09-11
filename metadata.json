@@ -1,0 +1,6 @@
+{
+  "name": "CampusEats",
+  "description": "Smart Canteen Pre-Order, Digital Token & Queue Management Platform for campuses.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
