@@ -53,7 +53,7 @@ export const KitchenDisplaySystem: React.FC = () => {
     <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-20 overflow-x-hidden">
       
       {/* Top KDS Control Bar */}
-      <div className="bg-slate-900 text-white rounded-3xl p-4 sm:p-6 mb-6 shadow-xl border border-slate-800 w-full overflow-hidden">
+      <div className="bg-zinc-900 text-white rounded-3xl p-4 sm:p-6 mb-6 shadow-xl border border-zinc-800 w-full overflow-hidden">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-orange-500 text-white flex items-center justify-center font-bold shadow-lg shadow-orange-500/20 shrink-0">
@@ -68,7 +68,7 @@ export const KitchenDisplaySystem: React.FC = () => {
                   Station 1 & 2
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5 truncate">
+              <p className="text-xs text-zinc-400 mt-0.5 truncate">
                 📍 {selectedCanteen.name} • Live Ticket Stream & Cooking Pipeline
               </p>
             </div>
@@ -76,19 +76,19 @@ export const KitchenDisplaySystem: React.FC = () => {
 
           {/* Quick Metrics & Rush Protection Toggle */}
           <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-            <div className="flex items-center gap-2.5 sm:gap-3 bg-slate-800/90 px-3 sm:px-4 py-2 rounded-2xl border border-slate-700 text-xs">
+            <div className="flex items-center gap-2.5 sm:gap-3 bg-zinc-800/90 px-3 sm:px-4 py-2 rounded-2xl border border-zinc-700 text-xs">
               <div>
-                <div className="text-[10px] text-slate-400 uppercase font-semibold">In Queue</div>
+                <div className="text-[10px] text-zinc-400 uppercase font-semibold">In Queue</div>
                 <div className="text-base font-extrabold font-mono text-orange-400">{acceptedCount}</div>
               </div>
-              <div className="w-px h-6 bg-slate-700"></div>
+              <div className="w-px h-6 bg-zinc-700"></div>
               <div>
-                <div className="text-[10px] text-slate-400 uppercase font-semibold">Cooking</div>
-                <div className="text-base font-extrabold font-mono text-sky-400">{preparingCount}</div>
+                <div className="text-[10px] text-zinc-400 uppercase font-semibold">Cooking</div>
+                <div className="text-base font-extrabold font-mono text-amber-400">{preparingCount}</div>
               </div>
-              <div className="w-px h-6 bg-slate-700"></div>
+              <div className="w-px h-6 bg-zinc-700"></div>
               <div>
-                <div className="text-[10px] text-slate-400 uppercase font-semibold">At Counter</div>
+                <div className="text-[10px] text-zinc-400 uppercase font-semibold">At Counter</div>
                 <div className="text-base font-extrabold font-mono text-emerald-400">{readyCount}</div>
               </div>
             </div>
@@ -98,7 +98,7 @@ export const KitchenDisplaySystem: React.FC = () => {
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition ${
                 kitchenMode === 'rush'
                   ? 'bg-rose-500/20 border-rose-500 text-rose-300 animate-pulse'
-                  : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+                  : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700'
               }`}
             >
               <Flame className="w-3.5 h-3.5 text-rose-400" />
@@ -108,8 +108,8 @@ export const KitchenDisplaySystem: React.FC = () => {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-2 mt-5 pt-4 border-t border-slate-800 overflow-x-auto no-scrollbar w-full max-w-full min-w-0">
-          <span className="text-xs text-slate-400 font-semibold mr-1 flex items-center gap-1">
+        <div className="flex items-center gap-2 mt-5 pt-4 border-t border-zinc-800 overflow-x-auto no-scrollbar w-full max-w-full min-w-0">
+          <span className="text-xs text-zinc-400 font-semibold mr-1 flex items-center gap-1">
             <Filter className="w-3 h-3" /> Filter Tickets:
           </span>
           {[
@@ -124,7 +124,7 @@ export const KitchenDisplaySystem: React.FC = () => {
               className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition ${
                 activeFilter === tab.id
                   ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
               }`}
             >
               {tab.label}
@@ -135,10 +135,10 @@ export const KitchenDisplaySystem: React.FC = () => {
 
       {/* Ticket Grid (PRD 16) */}
       {displayedOrders.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-xs">
-          <ChefHat className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="font-heading font-bold text-base text-slate-800">No active tickets right now</h3>
-          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+        <div className="text-center py-20 bg-white rounded-3xl border border-zinc-100 shadow-xs">
+          <ChefHat className="w-12 h-12 text-zinc-300 mx-auto mb-3" />
+          <h3 className="font-heading font-bold text-base text-zinc-800">No active tickets right now</h3>
+          <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
             All orders are fulfilled or collected! New student pre-orders will appear here automatically with audio alert.
           </p>
         </div>
@@ -160,7 +160,7 @@ export const KitchenDisplaySystem: React.FC = () => {
                   isReady
                     ? 'border-emerald-300 ring-2 ring-emerald-100'
                     : isPreparing
-                    ? 'border-sky-300 ring-2 ring-sky-50'
+                    ? 'border-amber-300 ring-2 ring-amber-50'
                     : 'border-orange-300 ring-2 ring-orange-50'
                 }`}
               >
@@ -170,7 +170,7 @@ export const KitchenDisplaySystem: React.FC = () => {
                     isReady
                       ? 'bg-gradient-to-r from-emerald-600 to-teal-600'
                       : isPreparing
-                      ? 'bg-gradient-to-r from-sky-600 to-blue-600'
+                      ? 'bg-gradient-to-r from-amber-600 to-orange-600'
                       : 'bg-gradient-to-r from-orange-600 to-amber-600'
                   }`}
                 >
@@ -196,9 +196,9 @@ export const KitchenDisplaySystem: React.FC = () => {
 
                 {/* Ticket Body: Items & Customizations */}
                 <div className="p-4 flex-1 space-y-3">
-                  <div className="flex items-center justify-between text-xs text-slate-500 pb-2 border-b border-slate-100">
-                    <span className="font-semibold text-slate-700">{order.userName}</span>
-                    <span className="capitalize text-[11px] bg-slate-100 px-2 py-0.5 rounded-full font-bold text-slate-600">
+                  <div className="flex items-center justify-between text-xs text-zinc-500 pb-2 border-b border-zinc-100">
+                    <span className="font-semibold text-zinc-700">{order.userName}</span>
+                    <span className="capitalize text-[11px] bg-zinc-100 px-2 py-0.5 rounded-full font-bold text-zinc-600">
                       {order.userRole}
                     </span>
                   </div>
@@ -208,10 +208,10 @@ export const KitchenDisplaySystem: React.FC = () => {
                     {order.items.map((it, idx) => (
                       <div
                         key={idx}
-                        className="bg-slate-50 p-2.5 rounded-xl border border-slate-100"
+                        className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-heading font-extrabold text-slate-900 text-sm">
+                          <span className="font-heading font-extrabold text-zinc-900 text-sm">
                             <span className="text-orange-600 mr-1.5 font-mono text-base font-black">
                               {it.quantity}×
                             </span>
@@ -238,11 +238,11 @@ export const KitchenDisplaySystem: React.FC = () => {
                 </div>
 
                 {/* Ticket Action Buttons (PRD 16: Accepted -> Preparing -> Ready) */}
-                <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-2">
+                <div className="p-4 bg-zinc-50 border-t border-zinc-100 flex flex-col gap-2">
                   {isAccepted && (
                     <button
                       onClick={() => updateOrderStatus(order.id, 'PREPARING')}
-                      className="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-extrabold shadow-md shadow-sky-600/20 transition flex items-center justify-center gap-1.5 active:scale-98"
+                      className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold shadow-md shadow-amber-600/20 transition flex items-center justify-center gap-1.5 active:scale-98"
                     >
                       <ChefHat className="w-4 h-4" />
                       <span>Start Cooking (Move to Preparing)</span>
@@ -271,7 +271,7 @@ export const KitchenDisplaySystem: React.FC = () => {
                       </button>
                       <button
                         onClick={() => updateOrderStatus(order.id, 'COLLECTED')}
-                        className="flex-1 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold transition flex items-center justify-center gap-1"
+                        className="flex-1 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-extrabold transition flex items-center justify-center gap-1"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                         <span>Collected</span>

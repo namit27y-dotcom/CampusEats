@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Counter Dispatch & Token Calling — CampusEats{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Ready for Pickup (To Call & Collect) -->
+    <div class="col-lg-7">
+        <div class="card rounded-4 shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-success"><i class="bi bi-bell-fill me-2"></i> Ready for Pickup (Call Student)</h5>
+                <span class="badge bg-success rounded-pill">{{ ready_orders|length }} ready</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for ord in ready_orders %}
+                    <div class="list-group-item p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <span class="display-6 fw-bold text-dark font-monospace me-3">#{{ ord.token_number }}</span>
+                            <span class="fw-bold">{{ ord.user_name }}</span>
+                            <div class="text-muted small">Pickup Counter: {{ ord.pickup_counter }}</div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-dark btn-sm rounded-pill fw-bold" onclick="announceToken('{{ ord.token_number }}', '{{ ord.pickup_counter }}')">
+                                <i class="bi bi-volume-up-fill me-1"></i> Call Out Loud
+                            </button>
+                            <button class="btn btn-success btn-sm rounded-pill fw-bold px-3" onclick="updateOrderStatus('{{ ord.id }}', 'COLLECTED')">
+                                <i class="bi bi-check2-circle me-1"></i> Handover (Collected)
+                            </button>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="p-5 text-center text-muted">
+                        <p class="mb-0">No orders waiting for pickup right now.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cooking in Progress Queue -->
+    <div class="col-lg-5">
+        <div class="card rounded-4 shadow-sm border-0">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0 text-secondary"><i class="bi bi-hourglass-split me-2"></i> Cooking in Progress</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for ord in preparing_orders %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center p-3">
+                        <div>
+                            <span class="fw-bold font-monospace me-2">#{{ ord.token_number }}</span>
+                            <span>{{ ord.user_name }}</span>
+                        </div>
+                        <span class="badge bg-warning text-dark">{{ ord.status }}</span>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-muted small">No orders in preparation.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

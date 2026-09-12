@@ -77,22 +77,22 @@ export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
   const canCancel = ['CREATED', 'CONFIRMED', 'ACCEPTED'].includes(order.status);
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-lg w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 bg-zinc-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-lg w-full max-h-[92vh] flex flex-col shadow-2xl border border-zinc-200 animate-in fade-in zoom-in-95 duration-150">
         
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-zinc-100 flex items-center justify-between">
           <div>
             <div className="text-[10px] font-bold text-orange-600 uppercase tracking-wider">
               Smart Token Pass • Order #{order.id}
             </div>
-            <h2 className="font-heading font-extrabold text-base sm:text-lg text-slate-900">
+            <h2 className="font-heading font-extrabold text-base sm:text-lg text-zinc-900">
               Live Preparation & Token Tracker
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition"
+            className="p-1.5 text-zinc-400 hover:text-zinc-700 rounded-xl hover:bg-zinc-100 transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -138,14 +138,14 @@ export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
 
           {/* Standard Token Card if not yet ready or cancelled */}
           {!isReady && !isCancelled && !isCollected && (
-            <div className="bg-slate-900 text-white rounded-3xl p-5 sm:p-6 text-center shadow-lg relative overflow-hidden">
-              <div className="flex items-center justify-between text-xs text-slate-400 pb-3 border-b border-slate-800">
+            <div className="bg-zinc-900 text-white rounded-3xl p-5 sm:p-6 text-center shadow-lg relative overflow-hidden">
+              <div className="flex items-center justify-between text-xs text-zinc-400 pb-3 border-b border-zinc-800">
                 <span>Canteen: {order.canteenName}</span>
                 <span className="font-mono text-orange-400 font-semibold">{order.pickupSlot}</span>
               </div>
 
               <div className="py-4">
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
                   Your Digital Token
                 </div>
                 <div className="flex items-center justify-center gap-3 mt-1">
@@ -154,21 +154,21 @@ export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
                   </span>
                   <button
                     onClick={handleCopyToken}
-                    className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                    className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition"
                     title="Copy token"
                   >
                     {copiedToken ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                   </button>
                 </div>
 
-                <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs text-slate-200">
+                <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-800 border border-zinc-700 text-xs text-zinc-200">
                   <MapPin className="w-3.5 h-3.5 text-orange-400" />
                   <span>Pickup: <strong>{order.pickupCounter}</strong></span>
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5 text-slate-300">
+              <div className="pt-3 border-t border-zinc-800 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5 text-zinc-300">
                   <Clock className="w-3.5 h-3.5 text-orange-400" />
                   <span>Est. Ready: <strong className="text-white">{order.estimatedReadyTime}</strong></span>
                 </div>
@@ -215,10 +215,10 @@ export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
 
           {/* Step Progression Timeline (PRD 11 & 13) */}
           {!isCancelled && (
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-              <div className="text-xs font-bold text-slate-700 mb-3 flex items-center justify-between">
+            <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100">
+              <div className="text-xs font-bold text-zinc-700 mb-3 flex items-center justify-between">
                 <span>Preparation Milestones</span>
-                <span className="text-[10px] text-slate-500">Live Kitchen Sync</span>
+                <span className="text-[10px] text-zinc-500">Live Kitchen Sync</span>
               </div>
 
               <div className="space-y-4">
@@ -235,7 +235,7 @@ export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
                               ? 'bg-emerald-500 text-white'
                               : isCurrent
                               ? 'bg-orange-500 text-white ring-4 ring-orange-100'
-                              : 'bg-slate-200 text-slate-500'
+                              : 'bg-zinc-200 text-zinc-500'
                           }`}
                         >
                           {isDone ? <Check className="w-3.5 h-3.5" /> : idx + 1}
@@ -243,7 +243,7 @@ export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
                         {idx < steps.length - 1 && (
                           <div
                             className={`w-0.5 h-7 mt-1 ${
-                              isDone ? 'bg-emerald-500' : 'bg-slate-200'
+                              isDone ? 'bg-emerald-500' : 'bg-zinc-200'
                             }`}
                           />
                         )}
@@ -255,13 +255,13 @@ export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
                             isCurrent
                               ? 'text-orange-950 font-extrabold'
                               : isDone
-                              ? 'text-slate-800'
-                              : 'text-slate-400'
+                              ? 'text-zinc-800'
+                              : 'text-zinc-400'
                           }`}
                         >
                           {step.label}
                         </div>
-                        <div className="text-[11px] text-slate-500">{step.desc}</div>
+                        <div className="text-[11px] text-zinc-500">{step.desc}</div>
                       </div>
                     </div>
                   );
@@ -272,46 +272,46 @@ export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
 
           {/* Digital QR Code for Pickup Counter Verification */}
           {!isCancelled && (
-            <div className="bg-white border border-slate-100 rounded-2xl p-4 text-center shadow-xs">
-              <div className="text-xs font-bold text-slate-700 mb-2">
+            <div className="bg-white border border-zinc-100 rounded-2xl p-4 text-center shadow-xs">
+              <div className="text-xs font-bold text-zinc-700 mb-2">
                 Pickup Verification QR Code
               </div>
-              <p className="text-[11px] text-slate-500 mb-3">
+              <p className="text-[11px] text-zinc-500 mb-3">
                 Staff can scan this matrix at Counter {order.pickupCounter.slice(-1)} to confirm collection instantly.
               </p>
               <div className="flex justify-center">
                 <QRCodeView value={`CAMPUS-TOKEN:${order.tokenNumber}:${order.id}`} size={140} />
               </div>
-              <div className="font-mono text-xs font-bold text-slate-700 mt-2">
+              <div className="font-mono text-xs font-bold text-zinc-700 mt-2">
                 Token: {order.tokenNumber} • ID: #{order.id}
               </div>
             </div>
           )}
 
           {/* Ordered Items Summary */}
-          <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-            <div className="text-xs font-bold text-slate-700 mb-2">
+          <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100">
+            <div className="text-xs font-bold text-zinc-700 mb-2">
               Order Items Summary
             </div>
-            <div className="divide-y divide-slate-200/80 text-xs">
+            <div className="divide-y divide-zinc-200/80 text-xs">
               {order.items.map((item, i) => (
                 <div key={i} className="py-2 flex items-center justify-between">
                   <div>
-                    <div className="font-bold text-slate-800">
+                    <div className="font-bold text-zinc-800">
                       {item.quantity} × {item.name}
                     </div>
                     {item.customizationText && (
-                      <div className="text-[10px] text-slate-500">{item.customizationText}</div>
+                      <div className="text-[10px] text-zinc-500">{item.customizationText}</div>
                     )}
                   </div>
-                  <span className="font-mono text-slate-700 font-semibold">
+                  <span className="font-mono text-zinc-700 font-semibold">
                     ₹{item.price * item.quantity}
                   </span>
                 </div>
               ))}
             </div>
 
-            <div className="pt-2 mt-1 border-t border-slate-200 flex justify-between text-xs font-bold text-slate-900">
+            <div className="pt-2 mt-1 border-t border-zinc-200 flex justify-between text-xs font-bold text-zinc-900">
               <span>Total Paid ({order.paymentMethod.toUpperCase()})</span>
               <span className="font-mono text-orange-600 font-extrabold text-sm">₹{order.total}</span>
             </div>
@@ -319,7 +319,7 @@ export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
         </div>
 
         {/* Footer actions */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex gap-2">
+        <div className="p-4 border-t border-zinc-100 bg-zinc-50 rounded-b-3xl flex gap-2">
           {canCancel && (
             <button
               onClick={() => {
@@ -335,7 +335,7 @@ export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
 
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition text-center"
+            className="flex-1 py-2.5 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold transition text-center"
           >
             Close Tracker
           </button>

@@ -53,7 +53,7 @@ const MainAppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-zinc-50 text-zinc-900 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
       {/* Header with Role switcher, Canteen selector, Wallet, and Notifications */}
       <Header
         onOpenCart={() => setIsCartOpen(true)}
@@ -86,7 +86,7 @@ const MainAppContent: React.FC = () => {
             className={`p-3 sm:p-3.5 rounded-2xl shadow-xl border cursor-pointer transition flex items-center justify-between gap-2 backdrop-blur-md ${
               latestActiveOrder.status === 'READY'
                 ? 'bg-emerald-600/95 border-emerald-400 text-white shadow-emerald-600/30 animate-pulse'
-                : 'bg-slate-900/95 border-slate-700 text-white shadow-slate-950/40'
+                : 'bg-zinc-900/95 border-zinc-700 text-white shadow-zinc-950/40'
             }`}
           >
             <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
@@ -145,13 +145,13 @@ const MainAppContent: React.FC = () => {
       />
 
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-200/80 py-4 px-4 text-center text-xs text-slate-500">
+      <footer className="bg-white border-t border-zinc-200/80 py-4 px-4 text-center text-xs text-zinc-500">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="font-extrabold text-slate-800">CampusEats</span>
+            <span className="font-extrabold text-zinc-800">CampusEats</span>
             <span>• Smart Pre-Order & Token System</span>
           </div>
-          <div className="flex items-center gap-4 text-[11px] text-slate-400">
+          <div className="flex items-center gap-4 text-[11px] text-zinc-400">
             <span>Fast • Cashless • Zero Queue</span>
             <span>Audio Calling & Web Speech API Enabled</span>
           </div>

@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard & Analytics — CampusEats{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bi bi-shield-lock-fill text-dark me-2"></i> Canteen Administration</h3>
+        <p class="text-muted small mb-0">{{ selected_canteen.name }} • Menu and Revenue Manager</p>
+    </div>
+    <button class="btn btn-warning btn-sm rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#addItemModal">
+        <i class="bi bi-plus-lg me-1"></i> Add New Menu Item
+    </button>
+</div>
+
+<!-- Metrics Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card p-3 rounded-4 border-0 shadow-sm bg-white">
+            <div class="text-muted small fw-semibold">Total Revenue Generated</div>
+            <div class="fs-2 fw-bold text-dark font-monospace mt-1">₹{{ total_sales }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 rounded-4 border-0 shadow-sm bg-white">
+            <div class="text-muted small fw-semibold">Total Tokens Processed</div>
+            <div class="fs-2 fw-bold text-dark font-monospace mt-1">{{ total_orders_count }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 rounded-4 border-0 shadow-sm bg-white">
+            <div class="text-muted small fw-semibold">Active Menu Catalog</div>
+            <div class="fs-2 fw-bold text-dark font-monospace mt-1">{{ menu_items|length }} items</div>
+        </div>
+    </div>
+</div>
+
+<!-- Menu Catalog Table -->
+<div class="card rounded-4 border-0 shadow-sm mb-4">
+    <div class="card-header bg-white py-3">
+        <h5 class="fw-bold mb-0">Canteen Menu Inventory</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead class="table-light small">
+                <tr>
+                    <th>Item</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Diet</th>
+                    <th>Prep Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in menu_items %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="{{ item.image_url }}" class="rounded-3" width="40" height="40" style="object-fit: cover;">
+                            <div>
+                                <div class="fw-bold">{{ item.name }}</div>
+                                <small class="text-muted">{{ item.description|truncate(40) }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ item.category }}</span></td>
+                    <td class="font-monospace fw-bold">₹{{ item.price }}</td>
+                    <td>
+                        {% if item.is_veg %}
+                        <span class="badge bg-success-subtle text-success">Veg</span>
+                        {% else %}
+                        <span class="badge bg-danger-subtle text-danger">Non-Veg</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.prep_time_minutes }}m</td>
+                    <td><span class="badge bg-success">In Stock</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Item Modal -->
+<div class="modal fade" id="addItemModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Add Item to {{ selected_canteen.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/api/menu/add" method="POST">
+                <input type="hidden" name="canteen_id" value="{{ selected_canteen.id }}">
+                <div class="modal-body space-y-3">
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Food Item Name</label>
+                        <input type="text" name="name" class="form-control rounded-3" required placeholder="e.g. Chole Bhature">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Description</label>
+                        <textarea name="description" class="form-control rounded-3" rows="2" placeholder="Ingredients and details..."></textarea>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Price (₹)</label>
+                            <input type="number" name="price" step="0.5" class="form-control rounded-3" required value="60">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Category</label>
+                            <select name="category" class="form-select rounded-3">
+                                <option value="Snacks">Snacks</option>
+                                <option value="South Indian">South Indian</option>
+                                <option value="North Indian">North Indian</option>
+                                <option value="Chinese">Chinese</option>
+                                <option value="Beverages">Beverages</option>
+                                <option value="Quick Bites">Quick Bites</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Prep Time (mins)</label>
+                            <input type="number" name="prep_time_minutes" class="form-control rounded-3" value="8">
+                        </div>
+                        <div class="col-6 d-flex align-items-end">
+                            <div class="form-check pb-2">
+                                <input class="form-check-input" type="checkbox" name="is_veg" id="isVegCheck" checked>
+                                <label class="form-check-label small fw-bold" for="isVegCheck">Vegetarian Item</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0">
+                    <button type="button" class="btn btn-light rounded-pill btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning rounded-pill btn-sm fw-bold px-4">Save to Menu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -55,7 +55,7 @@ export const QRCodeView: React.FC<QRCodeViewProps> = ({ value, size = 160, class
   const cellSize = size / gridSize;
 
   return (
-    <div className={`inline-block p-3 bg-white rounded-xl shadow-sm border border-slate-200 ${className}`}>
+    <div className={`inline-block p-3 bg-white rounded-xl shadow-sm border border-zinc-200 ${className}`}>
       <svg
         width={size}
         height={size}
@@ -72,7 +72,7 @@ export const QRCodeView: React.FC<QRCodeViewProps> = ({ value, size = 160, class
                 y={r * cellSize}
                 width={cellSize + 0.3}
                 height={cellSize + 0.3}
-                fill="#0f172a"
+                fill="#18181b"
                 rx={0.5}
               />
             ) : null

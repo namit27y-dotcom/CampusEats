@@ -179,10 +179,10 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
         </div>
 
         {/* Live Token Status Widget (Per PRD Specification) */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div className="bg-white rounded-3xl p-6 border border-zinc-100 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">
                 Live Counter Ticker
               </span>
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
@@ -193,15 +193,15 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
               <div className="h-full bg-orange-500 w-3/4 rounded-full"></div>
             </div>
 
-            <div className="mt-3 p-4 rounded-2xl bg-slate-900 text-white flex items-center justify-between">
+            <div className="mt-3 p-4 rounded-2xl bg-zinc-900 text-white flex items-center justify-between">
               <div>
-                <div className="text-[11px] text-slate-400 font-medium">Current Token Serving</div>
+                <div className="text-[11px] text-zinc-400 font-medium">Current Token Serving</div>
                 <div className="text-3xl font-extrabold font-mono text-orange-400 tracking-tight mt-0.5">
                   #{queueStatus.currentServingToken}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-[11px] text-slate-400 font-medium">Active Queue</div>
+                <div className="text-[11px] text-zinc-400 font-medium">Active Queue</div>
                 <div className="text-xl font-bold font-mono text-emerald-400 mt-0.5">
                   {queueStatus.pendingCount + queueStatus.preparingCount} orders
                 </div>
@@ -236,15 +236,15 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                 </div>
               </div>
             ) : (
-              <div className="mt-4 p-3 rounded-2xl bg-slate-50 border border-slate-100 text-center">
-                <p className="text-xs text-slate-500">
+              <div className="mt-4 p-3 rounded-2xl bg-zinc-50 border border-zinc-100 text-center">
+                <p className="text-xs text-zinc-500">
                   No active orders right now. Order below to receive your digital token!
                 </p>
               </div>
             )}
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between text-xs text-zinc-500">
             <span>Avg. Pickup: &lt; 30 seconds</span>
             <span className="font-semibold text-emerald-600">Counter 1 & 2 Open</span>
           </div>
@@ -266,7 +266,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                 Save ₹31
               </span>
             </div>
-            <p className="text-xs text-slate-700 font-medium mt-0.5">
+            <p className="text-xs text-zinc-700 font-medium mt-0.5">
               <strong>Masala Dosa + Campus Cold Coffee</strong> combo at just <span className="font-bold text-emerald-700 font-mono">₹99</span> (Valid 4:00–6:00 PM)
             </p>
           </div>
@@ -285,18 +285,18 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
       {/* Search Bar & Smart Filters */}
       <div className="flex flex-col sm:flex-row gap-2.5 items-center mb-6">
         <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -tranzinc-y-1/2" />
           <input
             type="text"
             placeholder='Search food ("dosa", "coffee", "veg", "burger", "₹50")...'
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-full bg-slate-100 border border-transparent text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white focus:border-orange-500 transition shadow-xs"
+            className="w-full pl-10 pr-4 py-2.5 rounded-full bg-zinc-100 border border-transparent text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white focus:border-orange-500 transition shadow-xs"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600"
+              className="absolute right-3.5 top-1/2 -tranzinc-y-1/2 text-xs text-zinc-400 hover:text-zinc-600"
             >
               Clear
             </button>
@@ -310,7 +310,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold border transition ${
               filterVegOnly
                 ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
             }`}
           >
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
@@ -320,9 +320,9 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
           {/* More Filters Dialog Trigger */}
           <button
             onClick={() => setShowFiltersModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition shadow-xs"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 transition shadow-xs"
           >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
+            <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-500" />
             <span>Filters</span>
             {(maxPrice < 200 || maxPrepTime < 30) && (
               <span className="w-2 h-2 rounded-full bg-orange-500"></span>
@@ -340,7 +340,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
             className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition border ${
               selectedCategory === cat.id
                 ? 'bg-orange-500 border-orange-500 text-white shadow-sm shadow-orange-500/20'
-                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'
             }`}
           >
             {cat.label}
@@ -352,11 +352,11 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
       {!searchQuery && selectedCategory === 'all' && popularItems.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-heading text-base font-bold text-slate-900 flex items-center gap-2">
+            <h2 className="font-heading text-base font-bold text-zinc-900 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-orange-500" />
               🔥 Popular Today
             </h2>
-            <span className="text-xs text-slate-500">Top ordered by students</span>
+            <span className="text-xs text-zinc-500">Top ordered by students</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -365,10 +365,10 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
               return (
                 <div
                   key={item.id}
-                  className="bg-white rounded-2xl border border-slate-100 p-3 shadow-xs hover:shadow-md hover:border-orange-200 transition flex flex-col justify-between relative group"
+                  className="bg-white rounded-2xl border border-zinc-100 p-3 shadow-xs hover:shadow-md hover:border-orange-200 transition flex flex-col justify-between relative group"
                 >
                   {/* Top image & tag */}
-                  <div className="relative h-36 rounded-xl overflow-hidden mb-3 bg-slate-100">
+                  <div className="relative h-36 rounded-xl overflow-hidden mb-3 bg-zinc-100">
                     <img
                       src={item.image}
                       alt={item.name}
@@ -389,7 +389,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                     </div>
                     <button
                       onClick={() => toggleFavorite(item.id)}
-                      className="absolute top-2 right-2 p-1.5 rounded-full bg-white/90 backdrop-blur-xs text-slate-400 hover:text-rose-500 transition shadow-xs"
+                      className="absolute top-2 right-2 p-1.5 rounded-full bg-white/90 backdrop-blur-xs text-zinc-400 hover:text-rose-500 transition shadow-xs"
                     >
                       <Heart
                         className={`w-3.5 h-3.5 ${
@@ -399,7 +399,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                         }`}
                       />
                     </button>
-                    <div className="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-medium px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <div className="absolute bottom-2 left-2 bg-zinc-900/80 backdrop-blur-xs text-white text-[10px] font-medium px-2 py-0.5 rounded-md flex items-center gap-1">
                       <Clock className="w-3 h-3 text-orange-300" />
                       {item.prepTimeMinutes} min
                     </div>
@@ -408,27 +408,27 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                   {/* Title & info */}
                   <div>
                     <div className="flex items-start justify-between gap-1">
-                      <h3 className="font-heading font-bold text-sm text-slate-900 leading-tight">
+                      <h3 className="font-heading font-bold text-sm text-zinc-900 leading-tight">
                         {item.name}
                       </h3>
-                      <div className="flex items-center gap-1 text-[11px] font-bold text-slate-800 bg-orange-50 px-1.5 py-0.5 rounded-md">
+                      <div className="flex items-center gap-1 text-[11px] font-bold text-zinc-800 bg-orange-50 px-1.5 py-0.5 rounded-md">
                         <Star className="w-3 h-3 text-orange-500 fill-orange-500" />
                         {item.rating}
                       </div>
                     </div>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                    <p className="text-xs text-zinc-500 mt-1 line-clamp-2">
                       {item.description}
                     </p>
                   </div>
 
                   {/* Price & Add to Cart button */}
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
                     <div>
-                      <span className="text-base font-extrabold text-slate-900 font-mono">
+                      <span className="text-base font-extrabold text-zinc-900 font-mono">
                         ₹{item.price}
                       </span>
                       {item.originalPrice && (
-                        <span className="text-xs text-slate-400 line-through ml-1.5 font-mono">
+                        <span className="text-xs text-zinc-400 line-through ml-1.5 font-mono">
                           ₹{item.originalPrice}
                         </span>
                       )}
@@ -441,7 +441,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                             const cartItem = cart.find((c) => c.menuItem.id === item.id);
                             if (cartItem) updateCartQuantity(cartItem.cartItemId, -1);
                           }}
-                          className="w-5 h-5 rounded-md bg-white text-slate-700 flex items-center justify-center hover:bg-orange-100 transition"
+                          className="w-5 h-5 rounded-md bg-white text-zinc-700 flex items-center justify-center hover:bg-orange-100 transition"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
@@ -458,7 +458,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                     ) : (
                       <button
                         onClick={() => handleAddClick(item)}
-                        className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-orange-500 text-white text-xs font-bold transition flex items-center gap-1 shadow-xs"
+                        className="px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-orange-500 text-white text-xs font-bold transition flex items-center gap-1 shadow-xs"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         Add
@@ -475,21 +475,21 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
       {/* Main Menu Grid */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-heading text-base font-bold text-slate-900">
+          <h2 className="font-heading text-base font-bold text-zinc-900">
             {selectedCategory === 'all' ? 'Full Canteen Menu' : `${selectedCategory.toUpperCase()} Menu`}
-            <span className="text-xs font-normal text-slate-500 ml-2">
+            <span className="text-xs font-normal text-zinc-500 ml-2">
               ({filteredItems.length} items available)
             </span>
           </h2>
         </div>
 
         {filteredItems.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-3xl border border-slate-100 shadow-xs">
-            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3">
+          <div className="text-center py-16 bg-white rounded-3xl border border-zinc-100 shadow-xs">
+            <div className="w-12 h-12 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mx-auto mb-3">
               <Search className="w-6 h-6" />
             </div>
-            <h3 className="font-bold text-slate-800 text-sm">No items found</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
+            <h3 className="font-bold text-zinc-800 text-sm">No items found</h3>
+            <p className="text-xs text-zinc-500 mt-1 max-w-xs mx-auto">
               Try adjusting your search query, clearing filters, or switching to another campus canteen.
             </p>
             <button
@@ -506,7 +506,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
             {filteredItems.map((item) => {
               const qtyInCart = getItemQuantityInCart(item.id);
               const isLowStock = item.stockQuantity <= 15 && item.stockQuantity > 0;
@@ -514,16 +514,16 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
               return (
                 <div
                   key={item.id}
-                  className={`bg-white rounded-2xl border p-4 shadow-xs transition flex gap-4 ${
-                    !item.inStock ? 'opacity-60 border-slate-100 bg-slate-50/50' : 'border-slate-100 hover:border-orange-200 hover:shadow-md'
+                  className={`bg-white rounded-2xl border p-3 sm:p-4 shadow-xs transition flex gap-3 sm:gap-4 ${
+                    !item.inStock ? 'opacity-60 border-zinc-100 bg-zinc-50/50' : 'border-zinc-100 hover:border-orange-200 hover:shadow-md'
                   }`}
                 >
                   {/* Left Column: Info & Details */}
-                  <div className="flex-1 flex flex-col justify-between">
+                  <div className="flex-1 flex flex-col justify-between min-w-0">
                     <div>
                       {/* Top meta tags */}
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="p-0.5 border border-emerald-300 rounded-xs flex items-center justify-center">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="p-0.5 border border-emerald-300 rounded-xs flex items-center justify-center shrink-0">
                           <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
                         </span>
                         {item.isOffer && (
@@ -539,47 +539,47 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                         )}
                       </div>
 
-                      <h3 className="font-heading font-bold text-sm text-slate-900">
+                      <h3 className="font-heading font-bold text-sm text-zinc-900 leading-snug">
                         {item.name}
                       </h3>
 
-                      <div className="flex items-center gap-3 text-xs mt-1 text-slate-600">
-                        <span className="font-mono font-extrabold text-slate-900 text-sm">
+                      <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 sm:gap-3 text-xs mt-1 text-zinc-600">
+                        <span className="font-mono font-extrabold text-zinc-900 text-sm">
                           ₹{item.price}
                         </span>
                         {item.originalPrice && (
-                          <span className="line-through text-slate-400 font-mono text-xs">
+                          <span className="line-through text-zinc-400 font-mono text-xs">
                             ₹{item.originalPrice}
                           </span>
                         )}
-                        <span className="text-slate-300">•</span>
-                        <span className="flex items-center gap-1 font-semibold text-slate-800">
+                        <span className="text-zinc-300 hidden sm:inline">•</span>
+                        <span className="flex items-center gap-1 font-semibold text-zinc-800">
                           <Star className="w-3 h-3 text-orange-500 fill-orange-500" />
-                          {item.rating} <span className="text-[10px] text-slate-400">({item.ratingCount})</span>
+                          {item.rating} <span className="text-[10px] text-zinc-400">({item.ratingCount})</span>
                         </span>
-                        <span className="text-slate-300">•</span>
-                        <span className="flex items-center gap-1 text-slate-500">
+                        <span className="text-zinc-300 hidden sm:inline">•</span>
+                        <span className="flex items-center gap-1 text-zinc-500">
                           <Clock className="w-3 h-3 text-orange-400" />
                           {item.prepTimeMinutes}m
                         </span>
                       </div>
 
-                      <p className="text-xs text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-zinc-500 mt-1.5 line-clamp-2 leading-relaxed">
                         {item.description}
                       </p>
                     </div>
 
                     {/* Customization label if present */}
                     {item.customizations && item.customizations.length > 0 && (
-                      <div className="mt-2 text-[10px] text-orange-600 font-medium">
+                      <div className="mt-2 text-[10px] text-orange-600 font-medium truncate">
                         ✦ Customizable (Spice, Style & Add-ons)
                       </div>
                     )}
                   </div>
 
                   {/* Right Column: Image and Add Button */}
-                  <div className="w-28 sm:w-32 flex flex-col items-center justify-between shrink-0">
-                    <div className="relative w-full h-24 rounded-xl overflow-hidden bg-slate-100 mb-2">
+                  <div className="w-24 sm:w-32 flex flex-col items-center justify-between shrink-0">
+                    <div className="relative w-full h-20 sm:h-24 rounded-xl overflow-hidden bg-zinc-100 mb-2">
                       <img
                         src={item.image}
                         alt={item.name}
@@ -588,7 +588,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                       />
                       <button
                         onClick={() => toggleFavorite(item.id)}
-                        className="absolute top-1.5 right-1.5 p-1 rounded-full bg-white/90 text-slate-400 hover:text-rose-500 transition"
+                        className="absolute top-1.5 right-1.5 p-1 rounded-full bg-white/90 text-zinc-400 hover:text-rose-500 transition cursor-pointer"
                       >
                         <Heart
                           className={`w-3 h-3 ${
@@ -602,17 +602,17 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
 
                     {/* Button */}
                     {!item.inStock ? (
-                      <span className="text-xs text-slate-400 font-semibold py-1">
+                      <span className="text-xs text-zinc-400 font-semibold py-1">
                         Sold Out
                       </span>
                     ) : qtyInCart > 0 ? (
-                      <div className="flex items-center gap-2 bg-orange-50 border border-orange-300 rounded-xl px-2 py-1 shadow-2xs">
+                      <div className="flex items-center gap-1.5 sm:gap-2 bg-orange-50 border border-orange-300 rounded-xl px-2 py-1 shadow-2xs">
                         <button
                           onClick={() => {
                             const cartItem = cart.find((c) => c.menuItem.id === item.id);
                             if (cartItem) updateCartQuantity(cartItem.cartItemId, -1);
                           }}
-                          className="w-5 h-5 rounded-md bg-white text-slate-700 flex items-center justify-center hover:bg-orange-100 transition"
+                          className="w-6 h-6 rounded-md bg-white text-zinc-700 flex items-center justify-center hover:bg-orange-100 transition cursor-pointer"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
@@ -621,7 +621,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                         </span>
                         <button
                           onClick={() => handleAddClick(item)}
-                          className="w-5 h-5 rounded-md bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 transition"
+                          className="w-6 h-6 rounded-md bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 transition cursor-pointer"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -629,7 +629,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                     ) : (
                       <button
                         onClick={() => handleAddClick(item)}
-                        className="w-full py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm shadow-orange-500/20"
+                        className="w-full py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm shadow-orange-500/20 cursor-pointer min-h-[36px]"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         Add
@@ -645,10 +645,10 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
 
       {/* Floating Bottom Cart Bar for Quick Checkout */}
       {cart.length > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-full max-w-lg px-4 z-40">
+        <div className="fixed bottom-4 left-1/2 -tranzinc-x-1/2 w-full max-w-lg px-4 z-40">
           <div
             onClick={onOpenCart}
-            className="bg-slate-900 text-white p-3.5 rounded-2xl shadow-xl shadow-slate-900/30 border border-slate-700 flex items-center justify-between cursor-pointer hover:bg-slate-800 transition transform hover:-translate-y-0.5 active:scale-98"
+            className="bg-zinc-900 text-white p-3.5 rounded-2xl shadow-xl shadow-zinc-900/30 border border-zinc-700 flex items-center justify-between cursor-pointer hover:bg-zinc-800 transition transform hover:-tranzinc-y-0.5 active:scale-98"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-orange-500 flex items-center justify-center text-white font-black text-sm shadow-sm">
@@ -658,7 +658,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                 <div className="text-xs font-bold">
                   {cart.length} item{cart.length > 1 ? 's' : ''} in cart
                 </div>
-                <div className="text-[11px] text-slate-400 font-mono">
+                <div className="text-[11px] text-zinc-400 font-mono">
                   Total: <strong className="text-orange-400">₹{cart.reduce((a, b) => a + b.totalPrice, 0)}</strong> (incl. discounts)
                 </div>
               </div>
@@ -674,23 +674,23 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
 
       {/* Customization Modal */}
       {customizingItem && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 bg-zinc-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-zinc-100 animate-in fade-in zoom-in-95 duration-150 max-h-[88vh] overflow-y-auto">
+            <div className="flex items-start justify-between pb-3 border-b border-zinc-100">
               <div>
                 <span className="text-[10px] font-bold text-orange-600 uppercase tracking-wider">
                   Customize your order
                 </span>
-                <h3 className="font-heading font-extrabold text-base text-slate-900 mt-0.5">
+                <h3 className="font-heading font-extrabold text-base text-zinc-900 mt-0.5">
                   {customizingItem.name}
                 </h3>
-                <div className="text-xs text-slate-500 font-mono mt-0.5">
+                <div className="text-xs text-zinc-500 font-mono mt-0.5">
                   Base Price: ₹{customizingItem.price}
                 </div>
               </div>
               <button
                 onClick={() => setCustomizingItem(null)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-zinc-400 hover:text-zinc-600 p-1 cursor-pointer"
               >
                 ✕
               </button>
@@ -698,8 +698,8 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
 
             <div className="mt-4 space-y-4 max-h-72 overflow-y-auto pr-1">
               {customizingItem.customizations?.map((group) => (
-                <div key={group.name} className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
-                  <div className="text-xs font-bold text-slate-800 mb-2">
+                <div key={group.name} className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
+                  <div className="text-xs font-bold text-zinc-800 mb-2">
                     {group.name}
                   </div>
                   <div className="space-y-1.5">
@@ -717,7 +717,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                           className={`flex items-center justify-between p-2 rounded-xl text-xs cursor-pointer border transition ${
                             isSelected
                               ? 'bg-orange-50 border-orange-400 font-bold text-orange-950'
-                              : 'bg-white border-slate-200/70 text-slate-700 hover:bg-slate-100'
+                              : 'bg-white border-zinc-200/70 text-zinc-700 hover:bg-zinc-100'
                           }`}
                         >
                           <div className="flex items-center gap-2">
@@ -725,7 +725,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                               className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
                                 isSelected
                                   ? 'border-orange-500 bg-orange-500'
-                                  : 'border-slate-300'
+                                  : 'border-zinc-300'
                               }`}
                             >
                               {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
@@ -748,7 +748,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
             <div className="mt-6 flex gap-2">
               <button
                 onClick={() => setCustomizingItem(null)}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                className="flex-1 py-2.5 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition"
               >
                 Cancel
               </button>
@@ -765,16 +765,16 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
 
       {/* Filter Modal */}
       {showFiltersModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-5 shadow-2xl border border-slate-100">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+        <div className="fixed inset-0 bg-zinc-900/40 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-5 shadow-2xl border border-zinc-100 max-h-[88vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+              <h3 className="font-bold text-sm text-zinc-900 flex items-center gap-1.5">
                 <SlidersHorizontal className="w-4 h-4 text-orange-500" />
                 Filter Canteen Menu
               </h3>
               <button
                 onClick={() => setShowFiltersModal(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-zinc-400 hover:text-zinc-600 p-1 cursor-pointer"
               >
                 ✕
               </button>
@@ -782,7 +782,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
 
             <div className="mt-4 space-y-4">
               <div>
-                <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                <div className="flex items-center justify-between text-xs font-bold text-zinc-700">
                   <span>Max Price</span>
                   <span className="font-mono text-orange-600 font-bold">₹{maxPrice}</span>
                 </div>
@@ -798,7 +798,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
               </div>
 
               <div>
-                <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                <div className="flex items-center justify-between text-xs font-bold text-zinc-700">
                   <span>Max Prep Time</span>
                   <span className="font-mono text-orange-600 font-bold">{maxPrepTime} mins</span>
                 </div>
@@ -813,13 +813,13 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                 />
               </div>
 
-              <div className="pt-2 border-t border-slate-100">
-                <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+              <div className="pt-2 border-t border-zinc-100">
+                <label className="flex items-center gap-2 text-xs font-bold text-zinc-700 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={filterVegOnly}
                     onChange={(e) => setFilterVegOnly(e.target.checked)}
-                    className="rounded border-slate-300 text-emerald-600 focus:ring-0 w-4 h-4"
+                    className="rounded border-zinc-300 text-emerald-600 focus:ring-0 w-4 h-4"
                   />
                   <span>Show Pure Vegetarian Items Only</span>
                 </label>
@@ -833,13 +833,13 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                   setMaxPrepTime(30);
                   setFilterVegOnly(false);
                 }}
-                className="flex-1 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                className="flex-1 py-2 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-600 hover:bg-zinc-50"
               >
                 Reset
               </button>
               <button
                 onClick={() => setShowFiltersModal(false)}
-                className="flex-1 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800"
+                className="flex-1 py-2 rounded-xl bg-zinc-900 text-white text-xs font-bold hover:bg-zinc-800"
               >
                 Apply Filters
               </button>
