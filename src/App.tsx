@@ -6,13 +6,10 @@
 import React, { useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/Header';
-import { StudentView } from './components/student/StudentView';
+import { StudentPage, KitchenPage, CounterPage, AdminPage } from './pages';
 import { CartModal } from './components/student/CartModal';
 import { OrderTrackingModal } from './components/student/OrderTrackingModal';
 import { OrderHistoryModal } from './components/student/OrderHistoryModal';
-import { KitchenDisplaySystem } from './components/kitchen/KitchenDisplaySystem';
-import { CounterDashboard } from './components/counter/CounterDashboard';
-import { AdminPanel } from './components/admin/AdminPanel';
 import { Order } from './types';
 import { Clock, QrCode, Sparkles, Volume2, ShieldCheck, ChevronRight } from 'lucide-react';
 
@@ -64,18 +61,18 @@ const MainAppContent: React.FC = () => {
       {/* Main Role-Based Screen */}
       <main className="flex-1 w-full max-w-full overflow-x-hidden">
         {currentRole === 'student' && (
-          <StudentView
+          <StudentPage
             onOpenCart={() => setIsCartOpen(true)}
             onOpenActiveOrder={() => handleOpenOrderTracker(latestActiveOrder)}
             onOpenTracker={handleOpenOrderTracker}
           />
         )}
 
-        {currentRole === 'kitchen' && <KitchenDisplaySystem />}
+        {currentRole === 'kitchen' && <KitchenPage />}
 
-        {currentRole === 'counter' && <CounterDashboard />}
+        {currentRole === 'counter' && <CounterPage />}
 
-        {currentRole === 'admin' && <AdminPanel />}
+        {currentRole === 'admin' && <AdminPage />}
       </main>
 
       {/* Floating Active Order Quick Bar for Student */}

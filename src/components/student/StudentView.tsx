@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { MenuItem, FoodCategory } from '../../types';
+import { AiAssistantModal } from '../AiAssistantModal';
 import {
   Search,
   SlidersHorizontal,
@@ -43,6 +44,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
   const [maxPrice, setMaxPrice] = useState<number>(200);
   const [maxPrepTime, setMaxPrepTime] = useState<number>(30);
   const [showFiltersModal, setShowFiltersModal] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
 
   // Customization modal state
   const [customizingItem, setCustomizingItem] = useState<MenuItem | null>(null);
@@ -304,6 +306,15 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* Gemini AI Assistant Button */}
+          <button
+            onClick={() => setShowAiModal(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-xs transition"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>AI Suggest</span>
+          </button>
+
           {/* Quick Veg Toggle */}
           <button
             onClick={() => setFilterVegOnly(!filterVegOnly)}
@@ -847,6 +858,8 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
           </div>
         </div>
       )}
+      {/* Gemini AI Assistant Modal */}
+      <AiAssistantModal isOpen={showAiModal} onClose={() => setShowAiModal(false)} />
     </div>
   );
 };

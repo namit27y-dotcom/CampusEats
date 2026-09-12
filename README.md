@@ -1,326 +1,228 @@
 # CampusEats — Smart Canteen Pre-Order & Digital Token System
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.0.3-black?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
-[![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-7952B3?logo=bootstrap&logoColor=white)](https://getbootstrap.com/)
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![React](https://img.shields.io/badge/React-19.0-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Vite](https://img.shields.io/badge/Vite-6.2-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4.1-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Vercel](https://img.shields.io/badge/Vercel-Deployable-black?logo=vercel&logoColor=white)](https://vercel.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **CampusEats** is a full-stack campus food pre-ordering, digital token generation, and real-time kitchen queue management platform. Designed specifically for universities and colleges to eliminate long canteen break lines, streamline kitchen prep workflows, and ensure contactless campus dining.
+> **CampusEats** is a production-grade campus food pre-ordering, digital token issuance, and live kitchen display system. It eliminates peak break-time canteen congestion by replacing physical lines with smart mobile pre-ordering, live token status tracking, and contactless QR pickup verification.
 
 ---
 
 ## Table of Contents
-1. [Key Features by Role](#key-features-by-role)
-2. [Dual Tech Stack Implementations](#dual-tech-stack-implementations)
-3. [Quick Start: Python Flask + SQLite/MySQL App](#quick-start-python-flask--sqlitemysql-app)
-4. [Quick Start: React + TypeScript App](#quick-start-react--typescript-app)
-5. [Database Architecture & Schema](#database-architecture--schema)
-6. [REST API Reference](#rest-api-reference)
-7. [Design System & Theme Guidelines](#design-system--theme-guidelines)
-8. [Project Directory Structure](#project-directory-structure)
-9. [Export & Deployment](#export--deployment)
+1. [Project Overview](#project-overview)
+2. [Features by Role](#features-by-role)
+3. [Tech Stack](#tech-stack)
+4. [Architecture & Folder Structure](#architecture--folder-structure)
+5. [Installation & Local Setup](#installation--local-setup)
+6. [Environment Variables](#environment-variables)
+7. [Development & Build Commands](#development--build-commands)
+8. [Vercel Deployment Guide](#vercel-deployment-guide)
+9. [Database & Service Integration Guide](#database--service-integration-guide)
 
 ---
 
-## Key Features by Role
+## Project Overview
 
-### 🎓 1. Student Ordering Portal
-- **Multi-Canteen Switching**: Switch between Main Academic Canteen, Engineering Block Cafe, and Hostel Mess with individual queue statuses and wait times.
-- **Smart Dietary Filtering**: Instant search by meal category (`South Indian`, `North Indian`, `Snacks`, `Chinese`, `Beverages`) and dietary preference (100% Pure Veg vs. Non-Veg).
-- **Meal Customizer**: Select spice levels, preparation instructions, extra dips/sambar, and add-ons before adding to cart.
-- **Cashless Student Wallet**: One-click deduction from campus student IDs with real-time balance tracking.
-- **Digital Token Generator**: Issues unique sequential digital tokens (e.g., `#A134`) upon checkout with automated order confirmation.
-- **Live Order Tracker**: Real-time 4-stage tracking progress (`Confirmed` → `Preparing` → `Ready for Pickup` → `Collected`).
-- **QR Token Verification**: Generates high-contrast QR codes for touchless scanner verification at canteen pickup counters.
-- **Order History & Ratings**: View past receipts, re-order favorite meals, and submit 5-star ratings with feedback tags.
+College and university cafeterias face extreme rush during 15-to-30 minute class breaks, resulting in crowded counters, delayed orders, and food waste. **CampusEats** solves this through a unified role-based portal:
+
+- **Students & Faculty** browse canteens across campus, customize dishes, place pre-orders, and receive instant digital tokens.
+- **Kitchen Staff** process tickets in order of arrival with live prep timers, advancing tickets from `CONFIRMED` to `PREPARING` and `READY`.
+- **Counter Staff** view ready tokens, call tokens aloud using the **Web Speech API**, and verify orders using high-contrast QR tokens before handoff.
+- **Canteen Administrators** track live revenue, order volume, and ticket averages while managing menu items, prices, stock availability, and cooking prep times in real time.
+
+---
+
+## Features by Role
+
+### 🎓 1. Student & Faculty Ordering Portal
+- **Multi-Canteen Selection**: Toggle between Main Canteen, Engineering Block Cafe, and Hostel Mess with live wait times and serving tokens.
+- **Dietary & Category Filters**: Filter by 100% Pure Veg vs. Non-Veg, and categories (`South Indian`, `North Indian`, `Snacks`, `Beverages`, `Combos`).
+- **Item Customization**: Customize spice level, add-ons (extra sambar, cheese, dips), and special preparation requests.
+- **Cart & Financials**: Subtotal, campus discounts, and tax computation with item quantity management.
+- **Flexible Checkout & Campus Wallet**: Pay via cashless Campus Wallet, UPI, Card, or Pay on Pickup.
+- **Instant Digital Token Generation**: Generates sequential digital tokens (e.g. `#A135`) with persistent order confirmation.
+- **Live 4-Stage Tracker**: Real-time status pipeline (`CONFIRMED` → `PREPARING` → `READY` → `COLLECTED`).
+- **QR Code Verification**: High-contrast SVG QR token displayed on screen for touchless counter scanner check-in.
+- **Order History & Feedback**: View past receipts, re-order favorites with one click, and submit 5-star ratings and food quality reviews.
 
 ### 🍳 2. Kitchen Display System (KDS)
-- **Live Ticket Pipeline**: Displays active orders grouped by status with preparation timers and itemized quantities.
-- **One-Click Cooking Workflow**: Kitchen staff can advance orders from `CONFIRMED` to `PREPARING` and `READY`.
-- **Live Canteen Rush Meter**: Tracks active order count and notifies chefs of queue surges.
+- **Live Ticket Board**: Categorized ticket columns with item quantities, customization notes, and preparation elapsed timers.
+- **Kitchen Workflow Engine**: One-tap progression: `CONFIRMED` → `PREPARING` → `READY`.
+- **Auto-Simulation Option**: Built-in queue simulator for automated kitchen order progression during demonstrations.
+- **Rush Hour Load Meter**: Real-time monitor tracking active orders and kitchen backlog.
 
-### 📢 3. Counter Dispatch & Token Calling
-- **Visual Token Board**: Displays ready-to-collect tokens categorized by pickup counter numbers.
-- **Automated Voice Calling (TTS)**: Built-in speech synthesis (`Web Speech API`) announces token numbers out loud over cafeteria speakers (*"Token number A134, please collect your order at Counter 1"*).
-- **One-Click Handover**: Marks orders as `COLLECTED` to instantly clear counter clutter.
+### 📢 3. Pickup Counter Dispatch & Calling Board
+- **Live Token Board**: Clean, high-contrast display of tokens ready for customer collection, arranged by counter number.
+- **Automated Voice Calling (Web Speech API)**: Cafeteria announcement audio (*"Token number A135, please collect your order at Counter 1"*).
+- **One-Click Handover**: Mark tokens as `COLLECTED` to clear counter queues and notify students.
+- **Quick Token Lookup**: Instant token search to verify and clear collected orders.
 
-### 📊 4. Admin Dashboard & Analytics
-- **Live Revenue Metrics**: Real-time calculation of total revenue (₹), total tokens processed, and average ticket size.
-- **Catalog & Inventory Management**: Add new food items, update pricing, toggle stock availability, and adjust preparation times.
+### 📊 4. Admin Dashboard & Inventory Manager
+- **Live Sales Analytics**: Track total gross revenue (₹), total tokens generated, average ticket value, and completion rates.
+- **Menu Catalog Management**: Add new dishes, adjust prices, edit item descriptions, and update photo URLs.
+- **Stock Availability Toggles**: Mark items in-stock or out-of-stock instantly with stock quantity tracking.
+- **Prep Time Adjustments**: Dynamically alter estimated preparation times during high-volume rush periods.
+- **Real-Time Order Activity Feed**: Audit trail of all campus transactions with timestamps.
 
 ---
 
-## Dual Tech Stack Implementations
+## Tech Stack
 
-This project contains two fully operational implementations:
-
-| Layer | Stack A: Flask + Bootstrap (Standard Academic & Production Web) | Stack B: React + Tailwind (Modern Interactive SPA) |
+| Layer | Technology | Description |
 |---|---|---|
-| **Location** | `/flask_canteen_app/` | `/src/` |
-| **Backend** | Python 3.10+ / Flask 3.x | Express / Node.js & Vite Dev Server |
-| **Database** | SQLite 3 (`canteen.db`) / MySQL Compatible | TypeScript Memory Store / Firestore Schema ready |
-| **Frontend** | HTML5 + CSS3 + Bootstrap 5.3 | React 19 + TypeScript + Tailwind CSS v4 |
-| **Interactivity**| Vanilla JavaScript (ES6 Fetch, DOM, Speech API) | React Hooks + Framer Motion Animations |
-| **Styling** | Bootstrap 5 + Custom Charcoal/Warm Theme | Tailwind CSS v4 Utility Classes |
+| **Framework** | [React 19](https://react.dev/) | Modern functional UI with concurrent rendering and hooks |
+| **Language** | [TypeScript 5.8](https://www.typescriptlang.org/) | Strict type safety for all models, props, state, and services |
+| **Build Tool** | [Vite 6](https://vitejs.dev/) | Sub-second dev server boot and optimized production bundle |
+| **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) | High-performance CSS engine with warm culinary styling |
+| **Icons** | [Lucide React](https://lucide.dev/) | Modern, accessible SVG icon library |
+| **Animations** | [Motion](https://motion.dev/) | Fluid micro-interactions and route/state transitions |
+| **AI Assistant** | [Google Gemini](https://ai.google.dev/) / Smart Engine | Meal recommendations and natural language cafeteria Q&A |
+| **Audio & Speech** | Web Speech API | Native browser text-to-speech for cafeteria token announcements |
+| **Persistence** | LocalStorage State | Robust, fault-tolerant persistence with zero setup required |
+| **Deployment** | [Vercel](https://vercel.com/) | Zero-config static output deployment with SPA rewrites |
 
 ---
 
-## Quick Start: Python Flask + SQLite/MySQL App
+## Architecture & Folder Structure
 
-The Flask implementation is self-contained inside the `flask_canteen_app/` folder.
+CampusEats uses a clean modular architecture separating presentation, state management, services, and types:
+
+```
+src/
+├── components/
+│   ├── common/
+│   │   └── QRCodeView.tsx            # High-contrast QR code vector generator
+│   ├── student/
+│   │   ├── StudentView.tsx           # Menu catalog, search, and category filter
+│   │   ├── CartModal.tsx             # Slide-over cart, wallet payment & checkout
+│   │   ├── OrderTrackingModal.tsx    # 4-stage tracking progress & QR pass
+│   │   └── OrderHistoryModal.tsx     # Past order receipts, reorder & ratings
+│   ├── kitchen/
+│   │   └── KitchenDisplaySystem.tsx  # KDS ticket columns & status progression
+│   ├── counter/
+│   │   └── CounterDashboard.tsx      # Ready token board & speech synthesizer
+│   ├── admin/
+│   │   └── AdminPanel.tsx            # Revenue metrics & menu/inventory editor
+│   └── Header.tsx                    # Role switcher, canteen selector & wallet
+│
+├── pages/                            # Role view page wrappers
+│   ├── StudentPage.tsx
+│   ├── KitchenPage.tsx
+│   ├── CounterPage.tsx
+│   ├── AdminPage.tsx
+│   └── index.ts
+│
+├── services/                         # Clean service layer (backend-ready)
+│   ├── storageService.ts             # Typed storage persistence & fallbacks
+│   ├── canteenService.ts             # Canteens & menu catalog operations
+│   ├── orderService.ts               # Token generator & order financial math
+│   └── index.ts
+│
+├── types/                            # Centralized TypeScript definitions
+│   └── index.ts                      # Interfaces: Order, MenuItem, Canteen, etc.
+│
+├── hooks/                            # Custom React hooks
+│   ├── useApp.ts                     # Context access hook
+│   └── index.ts
+│
+├── utils/
+│   └── soundEffects.ts               # Web Speech API token announcer & chimes
+│
+├── context/
+│   └── AppContext.tsx                # Centralized state provider & reducers
+│
+├── data/
+│   └── mockData.ts                   # Initial seed data for canteens & menus
+│
+├── App.tsx                           # Root application layout & active order bar
+├── main.tsx                          # React 19 entry point
+└── index.css                         # Tailwind CSS v4 imports & theme styles
+```
+
+---
+
+## Installation & Local Setup
 
 ### 1. Prerequisites
-- Python 3.8 or higher (`python3 --version`)
-- `pip` package manager
+- **Node.js**: `v18.0.0` or later (Node.js 20+ recommended)
+- **npm**: `v9.0.0` or later
 
-### 2. Installation
+### 2. Clone & Install Dependencies
 ```bash
-# Navigate to the Flask application directory
-cd flask_canteen_app
+# Clone the repository
+git clone https://github.com/your-username/campuseats.git
+
+# Enter the project directory
+cd campuseats
 
 # Install dependencies
-pip install -r requirements.txt
-```
-
-### 3. Run the Application
-```bash
-python app.py
-```
-*The application will automatically initialize and seed the SQLite database (`canteen.db`) on its first launch.*
-
-### 4. Access in Browser
-Open your browser and visit:
-```
-http://127.0.0.1:5000
-```
-
-- **Student Ordering**: `http://127.0.0.1:5000/`
-- **Kitchen Display (KDS)**: `http://127.0.0.1:5000/kitchen`
-- **Counter Calling**: `http://127.0.0.1:5000/counter`
-- **Admin Dashboard**: `http://127.0.0.1:5000/admin`
-
-### Switching from SQLite to MySQL (Optional)
-1. Install MySQL driver:
-   ```bash
-   pip install mysql-connector-python
-   ```
-2. In `flask_canteen_app/models.py`, replace `get_db_connection()` with:
-   ```python
-   import mysql.connector
-
-   def get_db_connection():
-       return mysql.connector.connect(
-           host="localhost",
-           user="your_mysql_username",
-           password="your_mysql_password",
-           database="campus_canteen"
-       )
-   ```
-3. Run `python app.py` — table creation and initial seed data run automatically.
-
----
-
-## Quick Start: React + TypeScript App
-
-The root directory contains the React SPA powering the live container preview.
-
-### 1. Installation
-```bash
 npm install
 ```
 
-### 2. Development Server
+### 3. Run Development Server
 ```bash
 npm run dev
 ```
-Open **`http://localhost:3000`** in your browser.
+Open **`http://localhost:3000`** in your browser to access the application.
 
-### 3. Production Build & Linting
+---
+
+## Environment Variables
+
+The application runs seamlessly without requiring mandatory external API keys for core pre-ordering and token management. For optional external services, copy the template:
+
 ```bash
-# Type check and lint
-npm run lint
-
-# Production build to /dist
-npm run build
+cp .env.example .env
 ```
+
+| Variable | Required | Description |
+|---|---|---|
+| `APP_URL` | Optional | Host URL of the deployed application |
+| `GEMINI_API_KEY` | Optional | Google GenAI key for AI-assisted meal recommendations |
 
 ---
 
-## Database Architecture & Schema
+## Development & Build Commands
 
-The relational database model consists of four core tables:
-
-```
-┌─────────────────┐       ┌─────────────────┐
-│    canteens     │       │      users      │
-├─────────────────┤       ├─────────────────┤
-│ id (PK)         │       │ id (PK)         │
-│ name            │       │ name            │
-│ location        │       │ email           │
-│ status          │       │ role            │
-│ wait_time_mins  │       │ student_id      │
-│ current_token   │       │ wallet_balance  │
-└────────┬────────┘       └────────┬────────┘
-         │                         │
-         │ 1:N                     │ 1:N
-         ▼                         ▼
-┌─────────────────┐       ┌─────────────────┐
-│   menu_items    │       │     orders      │
-├─────────────────┤       ├─────────────────┤
-│ id (PK)         │       │ id (PK)         │
-│ canteen_id (FK) │       │ token_number    │
-│ name            │       │ user_id (FK)    │
-│ description     │       │ canteen_id (FK) │
-│ price           │       │ items_json      │
-│ category        │       │ total_amount    │
-│ is_veg          │       │ status          │
-│ in_stock        │       │ pickup_counter  │
-│ prep_time_mins  │       │ created_at      │
-│ image_url       │       └─────────────────┘
-│ rating          │
-└─────────────────┘
-```
-
-### Table Definitions
-
-#### `canteens`
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `id` | TEXT | PRIMARY KEY | Unique canteen identifier (e.g., `c1`) |
-| `name` | TEXT | NOT NULL | Canteen location name |
-| `location` | TEXT | NOT NULL | Building and floor location |
-| `status` | TEXT | DEFAULT 'open' | Operating status (`open`, `closed`) |
-| `wait_time_minutes`| INTEGER | DEFAULT 12 | Average live wait time in minutes |
-| `current_serving_token` | TEXT | DEFAULT 'A134' | Latest token being served |
-
-#### `users`
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `id` | TEXT | PRIMARY KEY | User identifier (e.g., `u1`) |
-| `name` | TEXT | NOT NULL | Full name of student or faculty |
-| `email` | TEXT | NOT NULL | Campus email address |
-| `role` | TEXT | NOT NULL | Role (`student`, `faculty`, `staff`) |
-| `student_id` | TEXT | - | Campus roll/ID number |
-| `wallet_balance` | REAL | DEFAULT 500.0 | Cashless digital wallet balance in ₹ |
-
-#### `menu_items`
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `id` | TEXT | PRIMARY KEY | Unique item identifier (e.g., `m1`) |
-| `canteen_id` | TEXT | FOREIGN KEY | References `canteens(id)` |
-| `name` | TEXT | NOT NULL | Food item name |
-| `description` | TEXT | - | Ingredients and recipe details |
-| `price` | REAL | NOT NULL | Price in INR (₹) |
-| `category` | TEXT | NOT NULL | Category (`South Indian`, `Snacks`, etc.) |
-| `is_veg` | INTEGER | DEFAULT 1 | Dietary flag (1 = Veg, 0 = Non-Veg) |
-| `in_stock` | INTEGER | DEFAULT 1 | Availability status |
-| `prep_time_minutes` | INTEGER | DEFAULT 8 | Estimated cooking time in minutes |
-| `image_url` | TEXT | - | Food photography asset link |
-| `rating` | REAL | DEFAULT 4.5 | Average student rating out of 5.0 |
-
-#### `orders`
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `id` | TEXT | PRIMARY KEY | Order reference ID |
-| `token_number` | TEXT | NOT NULL | Public digital token (e.g., `A134`) |
-| `user_id` | TEXT | NOT NULL | References `users(id)` |
-| `user_name` | TEXT | NOT NULL | Customer name |
-| `canteen_id` | TEXT | NOT NULL | References `canteens(id)` |
-| `items_json` | TEXT | NOT NULL | Serialized JSON array of ordered items |
-| `total_amount` | REAL | NOT NULL | Total billed amount |
-| `status` | TEXT | NOT NULL | `CONFIRMED` / `PREPARING` / `READY` / `COLLECTED` |
-| `pickup_counter`| TEXT | DEFAULT 'Counter 1' | Assigned pickup counter |
-| `created_at` | TIMESTAMP | CURRENT_TIMESTAMP | Order submission timestamp |
+| Command | Action |
+|---|---|
+| `npm run dev` | Starts Vite local development server on `http://localhost:3000` |
+| `npm run build` | Compiles TypeScript and builds production bundles to `/dist` |
+| `npm run preview` | Runs a local static preview server of the `/dist` build |
+| `npm run lint` | Runs TypeScript type checking (`tsc --noEmit`) to verify zero errors |
+| `npm run clean` | Removes build artifacts (`dist/`) |
 
 ---
 
-## REST API Reference
+## Vercel Deployment Guide
 
-| Method | Endpoint | Description | Request Payload | Response |
-|---|---|---|---|---|
-| `GET` | `/` | Student ordering view | Query param: `?canteen=c1` | Rendered HTML |
-| `GET` | `/kitchen` | Kitchen Display System (KDS) | Query param: `?canteen=c1` | Rendered HTML |
-| `GET` | `/counter` | Counter dispatch & calling board | Query param: `?canteen=c1` | Rendered HTML |
-| `GET` | `/admin` | Admin dashboard & analytics | Query param: `?canteen=c1` | Rendered HTML |
-| `POST` | `/api/order` | Place a new order & issue token | JSON: `{ canteen_id, items, total_amount, user_id }` | `{ success: true, token_number: "A284" }` |
-| `POST` | `/api/order/<id>/status` | Update order preparation status | JSON: `{ status: "PREPARING" / "READY" / "COLLECTED" }` | `{ success: true, new_status: "READY" }` |
-| `POST` | `/api/menu/add` | Add new item to canteen catalog | Form Data: `name, price, category, is_veg, ...` | HTTP 302 Redirect to `/admin` |
+CampusEats is pre-configured with a production-ready `vercel.json` for one-click deployment:
 
----
+### Deploying via Vercel CLI
+```bash
+# Install Vercel CLI if not already installed
+npm i -g vercel
 
-## Design System & Theme Guidelines
-
-- **No-Blue Theme Constraint**: The application strictly avoids blue, cyan, and cold-slate palettes.
-- **Neutral Charcoal Base**: Deep, modern neutrals (`zinc-900`, `zinc-800`, `zinc-100`, `#18181b`) provide high-contrast legibility without ocular fatigue.
-- **Warm Culinary Accents**: Rich amber (`amber-500`), flame orange (`orange-500`), and fresh mint (`emerald-500`) highlight statuses, prices, and dietary tags.
-- **Typography**:
-  - Headings: `Outfit` (bold, geometric, scannable)
-  - Body: `Plus Jakarta Sans` (refined readability)
-  - Tokens & Prices: `JetBrains Mono` (clear numeral distinction)
-- **Responsive Viewports**: Fully responsive across ultra-compact smartphones (360px), tablets, and full-screen kitchen displays.
-
----
-
-## Project Directory Structure
-
-```
-.
-├── flask_canteen_app/               # Python Flask + SQLite/MySQL Application
-│   ├── app.py                       # Flask server, route controllers & REST API
-│   ├── models.py                    # SQLite/MySQL schemas & initial database seeding
-│   ├── requirements.txt             # Python dependencies (Flask, Werkzeug, Jinja2)
-│   ├── README.md                    # Dedicated Flask instructions & setup guide
-│   ├── static/
-│   │   ├── css/
-│   │   │   └── custom.css           # Typography, hover effects & custom styles
-│   │   └── js/
-│   │       └── main.js              # Cart management, API calls & Web Speech TTS
-│   └── templates/
-│       ├── base.html                # Base layout, navbar, live ticker & modal shell
-│       ├── index.html               # Student menu catalog & active token cards
-│       ├── kitchen.html             # Kitchen Display System (KDS)
-│       ├── counter.html             # Pickup counter dispatcher & token announcer
-│       └── admin.html               # Admin inventory catalog & sales dashboard
-│
-├── src/                             # React 19 + TypeScript + Tailwind Application
-│   ├── App.tsx                      # Root state engine & view switcher
-│   ├── main.tsx                     # React client bootstrap entry point
-│   ├── types.ts                     # TypeScript data interfaces & enums
-│   ├── index.css                    # Tailwind CSS v4 styling & animations
-│   └── components/
-│       ├── Header.tsx               # Top navigation, canteen selector & user badge
-│       ├── student/                 # Student view, cart & tracking modals
-│       ├── kitchen/                 # Kitchen Display System tickets
-│       ├── counter/                 # Pickup counter board & voice announcements
-│       ├── admin/                   # Admin catalog editor & metrics
-│       └── common/                  # QR Code vector view & shared UI
-│
-├── index.html                       # Single-page HTML container entry point
-├── package.json                     # Node.js dependencies & scripts
-├── tsconfig.json                    # TypeScript compiler configuration
-├── vite.config.ts                   # Vite build configuration
-└── README.md                        # Primary project documentation
+# Deploy directly
+vercel
 ```
 
----
-
-## Export & Deployment
-
-### 1. Export as ZIP
-- Click the **Settings** gear menu in Google AI Studio.
-- Select **Export as ZIP** to download the complete codebase including both the React and Flask applications.
-
-### 2. Push to GitHub
-- Open **Settings → Export to GitHub**.
-- Connect your GitHub repository to sync code revisions directly.
-
-### 3. Cloud Run Deployment
-- You can deploy either stack directly to Google Cloud Run using standard Docker containers or Cloud Buildpacks.
+### Deploying via Vercel Web Dashboard
+1. Push your code to your **GitHub**, **GitLab**, or **Bitbucket** repository.
+2. Go to [vercel.com/new](https://vercel.com/new).
+3. Import your `campuseats` repository.
+4. Set the build configuration:
+   - **Framework Preset**: `Vite`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+   - **Install Command**: `npm install`
+5. Click **Deploy**. Vercel will build and host your application with global CDN caching and SSL.
 
 ---
 
 ## License
-MIT License. Built for educational institutions and campus cafeterias.
+
+This project is licensed under the MIT License — open for university and cafeteria deployments.
