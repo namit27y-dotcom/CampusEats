@@ -21,12 +21,15 @@ import {
   INITIAL_INVENTORY,
 } from '../data/mockData';
 import { playOrderPlacedSound, playOrderReadyChime, announceTokenVoice } from '../utils/soundEffects';
+import { apiRequest } from '../utils/api';
 
 interface AppContextType {
   currentRole: UserRole;
   setRole: (role: UserRole) => void;
   currentUser: UserProfile;
   setCurrentUser: (user: UserProfile) => void;
+  loginUser: (email: string, password: string) => Promise<UserProfile>;
+  logoutUser: () => void;
   availableUsers: UserProfile[];
   
   // Canteen
@@ -198,6 +201,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setCurrentUser = (user: UserProfile) => {
     setCurrentUserState(user);
+  };
+
+  const loginUser = async (email: string, password: string): Promise<UserProfile> => {
+    const data = await apiRequest("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
+
+    localStorage.setItem("token", data.token);
+
+    const backendUser = data.user;
+
+    const user: UserProfile = {
+      ...backendUser,
+      walletBalance: Number(backendUser.wallet_balance ?? 0),
+      favoriteItemIds: backendUser.favoriteItemIds ?? [],
+    };
+
+    setCurrentUserState(user);
+    setRoleState(user.role);
+
+    return user;
+  };
+
+  const logoutUser = () => {
+    localStorage.removeItem("token");
+    setCurrentUserState(INITIAL_USERS[0]);
+    setRoleState("student");
   };
 
   // Add Notification helper
@@ -713,6 +747,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUser,
         setCurrentUser,
         availableUsers,
+        loginUser,
+        logoutUser,
         selectedCanteen,
         canteens,
         selectCanteen,
