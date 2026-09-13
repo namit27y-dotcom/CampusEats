@@ -1,6 +1,6 @@
 import pool from "../config/db.js";
 
-export const getKitchenOrders = async (req, res) => {
+export const getCounterOrders = async (req, res) => {
     try {
         const [orders] = await pool.query(
             `SELECT
@@ -19,8 +19,8 @@ export const getKitchenOrders = async (req, res) => {
              FROM orders o
              JOIN users u ON o.user_id = u.id
              JOIN canteens c ON o.canteen_id = c.id
-             WHERE o.status IN ('placed', 'accepted', 'preparing', 'ready')
-             ORDER BY o.created_at ASC`
+             WHERE o.status IN ('ready', 'completed')
+             ORDER BY o.created_at DESC`
         );
 
         if (orders.length === 0) {
@@ -75,75 +75,63 @@ export const getKitchenOrders = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Get kitchen orders error:", error);
+        console.error("Get counter orders error:", error);
 
         res.status(500).json({
             success: false,
-            message: "Failed to fetch kitchen orders"
+            message: "Failed to fetch counter orders"
         });
     }
 };
 
-export const updateOrderStatus = async (req, res) => {
+export const markOrderCollected = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status } = req.body;
 
-        const allowedStatuses = [
-            "accepted",
-            "preparing",
-            "ready",
-            "completed",
-            "cancelled"
-        ];
-
-        if (!allowedStatuses.includes(status)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid order status"
-            });
-        }
-
-        const [result] = await pool.query(
-            `UPDATE orders
-             SET status = ?
-             WHERE id = ?`,
-            [status, id]
+        const [orders] = await pool.query(
+            "SELECT id, status FROM orders WHERE id = ?",
+            [id]
         );
 
-        if (result.affectedRows === 0) {
+        if (orders.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: "Order not found"
             });
         }
 
-        const io = req.app.get("io");
+        await pool.query(
+            `UPDATE orders
+             SET status = 'completed'
+             WHERE id = ?`,
+            [id]
+        );
 
+        const io = req.app.get("io");
         if (io) {
             io.to(`order_${id}`).emit("orderStatusUpdated", {
                 orderId: Number(id),
-                status
+                status: "completed"
             });
             io.emit("orderStatusUpdated", {
                 orderId: Number(id),
-                status
+                status: "completed"
             });
         }
 
         res.json({
             success: true,
-            message: "Order status updated successfully",
+            message: "Order marked as completed/collected",
             orderId: Number(id),
-            status
+            status: "completed"
         });
 
     } catch (error) {
-        console.error("Update order status error:", error);
+        console.error("Mark order collected error:", error);
 
         res.status(500).json({
             success: false,
-            message: "Failed to update order status"
+            message: "Failed to mark order collected"
         });
     }
 };

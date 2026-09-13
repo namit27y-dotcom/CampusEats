@@ -114,3 +114,31 @@ export const login = async (req, res) => {
         });
     }
 };
+
+export const getMe = async (req, res) => {
+    try {
+        const [users] = await pool.query(
+            "SELECT id, name, email, role, wallet_balance FROM users WHERE id = ?",
+            [req.user.id]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "Authenticated user",
+            user: users[0]
+        });
+    } catch (error) {
+        console.error("Get /me error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch user profile"
+        });
+    }
+};

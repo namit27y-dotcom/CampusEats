@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   UserRole,
   UserProfile,
@@ -30,6 +30,7 @@ interface AppContextType {
   currentUser: UserProfile;
   setCurrentUser: (user: UserProfile) => void;
   loginUser: (email: string, password: string) => Promise<UserProfile>;
+  registerUser: (name: string, email: string, password: string, role?: string) => Promise<UserProfile>;
   logoutUser: () => void;
   availableUsers: UserProfile[];
   
@@ -100,13 +101,29 @@ const STORAGE_KEYS = {
   CANTEENS: 'campuseats_canteens_v1',
   FAVORITES: 'campuseats_favorites_v1',
   AUTO_SIM: 'campuseats_autosim_v1',
+  USER: 'campuseats_user_v1',
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Roles & Users
-  const [currentRole, setRoleState] = useState<UserRole>('student');
+  const [currentRole, setRoleState] = useState<UserRole>(() => {
+    const saved = localStorage.getItem('campuseats_user_v1');
+    if (saved) {
+      try {
+        const u = JSON.parse(saved);
+        if (u.role) return u.role;
+      } catch (e) {}
+    }
+    return 'student';
+  });
   const [availableUsers] = useState<UserProfile[]>(INITIAL_USERS);
   const [currentUser, setCurrentUserState] = useState<UserProfile>(() => {
+    const saved = localStorage.getItem('campuseats_user_v1');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
     return INITIAL_USERS[0];
   });
 
@@ -247,14 +264,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     loadBackendData();
   }, []);
+  // Fetch /auth/me on mount if token exists to ensure currentUser and role match MySQL
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const syncUserProfile = async () => {
+      try {
+        const data = await apiRequest("/auth/me");
+        if (data.success && data.user) {
+          const u = data.user;
+          const userProfile: UserProfile = {
+            id: String(u.id),
+            name: u.name,
+            studentId: `STU-${u.id}`,
+            department: "Campus",
+            year: "Member",
+            phone: "",
+            email: u.email,
+            walletBalance: Number(u.wallet_balance ?? 0),
+            role: u.role,
+            favoriteItemIds: [],
+          };
+          setCurrentUserState(userProfile);
+          setRoleState(u.role);
+          localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userProfile));
+        }
+      } catch (err) {
+        console.warn("Failed to sync /auth/me:", err);
+      }
+    };
+
+    syncUserProfile();
+  }, []);
+
   // Load authenticated user's real orders from backend
   useEffect(() => {
     const token = localStorage.getItem("token");
 
     if (!token || !currentUser?.id) return;
 
-    // Student orders should not overwrite Kitchen/Admin orders
-    if (["kitchen", "admin"].includes(String(currentUser.role).toLowerCase())) {
+    // Student orders should not overwrite Kitchen/Admin/Counter orders
+    const isRestrictedRole =
+      ["kitchen", "counter", "admin"].includes(String(currentUser.role).toLowerCase()) ||
+      ["kitchen", "counter", "admin"].includes(String(currentRole).toLowerCase());
+
+    if (isRestrictedRole) {
       return;
     }
 
@@ -276,7 +331,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
 
         setOrders((prev) => {
-          const previousOrders = new Map(
+          const previousOrders = new Map<string, Order>(
             prev.map((order) => [String(order.id), order])
           );
 
@@ -288,7 +343,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               tokenNumber: String(backendOrder.token_number),
               userId: String(currentUser.id),
               userName: currentUser.name,
-              userRole: currentUser.role,
+              userRole: currentUser.role as any,
 
               canteenId: String(backendOrder.canteen_id),
               canteenName: backendOrder.canteen_name,
@@ -340,7 +395,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     loadMyOrders();
-  }, [currentUser?.id]);
+  }, [currentUser?.id, currentUser?.role, currentRole]);
 
   // Load real kitchen orders from backend
   useEffect(() => {
@@ -348,13 +403,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (!token || !currentUser?.id) return;
 
-    const loadKitchenOrders = async () => {
-      if (!["kitchen", "admin"].includes(String(currentUser.role).toLowerCase())) {
-        return;
-      }
+    const isKitchenOrAdmin =
+      ["kitchen", "admin"].includes(String(currentUser.role).toLowerCase()) ||
+      ["kitchen", "admin"].includes(String(currentRole).toLowerCase());
+    const isCounter =
+      String(currentUser.role).toLowerCase() === "counter" ||
+      String(currentRole).toLowerCase() === "counter";
 
+    if (!isKitchenOrAdmin && !isCounter) {
+      return;
+    }
+
+    const loadStaffOrders = async () => {
       try {
-        const data = await apiRequest("/kitchen/orders");
+        const endpoint = isCounter ? "/counter/orders" : "/kitchen/orders";
+        const data = await apiRequest(endpoint);
 
         if (!data.success || !Array.isArray(data.orders)) {
           console.error("Invalid kitchen orders response:", data);
@@ -371,7 +434,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
 
         setOrders((prev) => {
-          const previousOrders = new Map(
+          const previousOrders = new Map<string, Order>(
             prev.map((order) => [String(order.id), order])
           );
 
@@ -388,25 +451,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               canteenId: String(backendOrder.canteen_id),
               canteenName: backendOrder.canteen_name,
 
-              items: existing?.items || [],
+              items: (backendOrder.items && backendOrder.items.length > 0)
+                ? backendOrder.items.map((it: any) => ({
+                    id: String(it.menu_item_id || it.id),
+                    name: it.name,
+                    price: Number(it.price),
+                    quantity: Number(it.quantity),
+                    isVeg: Boolean(it.is_veg ?? true),
+                    customizationText: it.customization || undefined,
+                  }))
+                : (existing?.items || []),
 
               subtotal: Number(backendOrder.total_amount),
               discount: 0,
               taxes: 0,
               total: Number(backendOrder.total_amount),
 
-              paymentMethod: existing?.paymentMethod || "wallet",
+              paymentMethod: backendOrder.payment_method || existing?.paymentMethod || "wallet",
               paymentTransactionId:
-                existing?.paymentTransactionId,
+                backendOrder.payment_transaction_id || existing?.paymentTransactionId,
 
               paymentStatus:
-                existing?.paymentStatus || "PAID",
+                String(backendOrder.payment_status || existing?.paymentStatus || "PAID").toUpperCase() as any,
 
               status:
                 statusMap[String(backendOrder.status).toLowerCase()] ||
                 "CONFIRMED",
 
-              pickupSlot: existing?.pickupSlot || "",
+              pickupSlot: existing?.pickupSlot || "Immediate",
               pickupCounter:
                 existing?.pickupCounter || "Pickup Counter 1",
 
@@ -436,8 +508,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     };
 
-    loadKitchenOrders();
-  }, [currentUser?.id, currentUser?.role]);
+    loadStaffOrders();
+  }, [currentUser?.id, currentUser?.role, currentRole]);
+
+  const socketRef = useRef<any>(null);
 
   // Real-time order status synchronization
   useEffect(() => {
@@ -449,6 +523,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       transports: ["websocket"],
     });
 
+    socketRef.current = socket;
+
     socket.on("connect", () => {
       console.log("CampusEats Socket.IO connected");
 
@@ -459,6 +535,64 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .forEach((order) => {
           socket.emit("joinOrder", order.id);
         });
+    });
+
+    socket.on("newOrderCreated", (data: any) => {
+      console.log("New order created broadcast:", data);
+      if (!data || !data.id) return;
+
+      socket.emit("joinOrder", data.id);
+
+      setOrders((prev) => {
+        if (prev.some((o) => Number(o.id) === Number(data.id))) {
+          return prev;
+        }
+
+        const isStaff =
+          ["kitchen", "counter", "admin"].includes(String(currentUser.role).toLowerCase()) ||
+          ["kitchen", "counter", "admin"].includes(String(currentRole).toLowerCase());
+        const isMyOrder = String(data.user_id || data.userId) === String(currentUser.id);
+
+        if (!isStaff && !isMyOrder) {
+          return prev;
+        }
+
+        const newOrd: Order = {
+          id: String(data.id),
+          tokenNumber: String(data.token_number || data.tokenNumber),
+          userId: String(data.user_id || data.userId),
+          userName: data.student_name || data.userName || "Student",
+          userRole: "student",
+          canteenId: String(data.canteen_id || data.canteenId),
+          canteenName: data.canteen_name || data.canteenName || selectedCanteen.name,
+          items: Array.isArray(data.items)
+            ? data.items.map((it: any) => ({
+                id: String(it.menu_item_id || it.menuItemId || it.id),
+                name: it.name || "Item",
+                price: Number(it.price || 0),
+                quantity: Number(it.quantity || 1),
+                isVeg: true,
+                customizationText: it.customization || undefined,
+              }))
+            : [],
+          subtotal: Number(data.total_amount || data.totalAmount || 0),
+          discount: 0,
+          taxes: 0,
+          total: Number(data.total_amount || data.totalAmount || 0),
+          paymentMethod: data.payment_method || data.paymentMethod || "wallet",
+          paymentTransactionId: data.payment_transaction_id || data.paymentTransactionId || undefined,
+          paymentStatus: String(data.payment_status || data.paymentStatus || "PAID").toUpperCase() as any,
+          status: "CONFIRMED",
+          pickupSlot: "Immediate",
+          pickupCounter: "Pickup Counter 1",
+          estimatedReadyTime: "",
+          estimatedPrepMinutes: 10,
+          createdAt: data.created_at || data.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        return [newOrd, ...prev];
+      });
     });
 
     socket.on(
@@ -480,6 +614,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (!newStatus) return;
 
+        if (newStatus === "READY") {
+          playOrderReadyChime();
+        }
+
         setOrders((prev) =>
           prev.map((order) =>
             Number(order.id) === Number(data.orderId)
@@ -496,12 +634,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     socket.on("disconnect", () => {
       console.log("CampusEats Socket.IO disconnected");
+      socketRef.current = null;
     });
 
     return () => {
       socket.disconnect();
+      socketRef.current = null;
     };
-  }, [currentUser?.id]);
+  }, [currentUser?.id, currentUser?.role, currentRole]);
 
   // Persist key states
   useEffect(() => {
@@ -539,15 +679,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setRole = (role: UserRole) => {
     setRoleState(role);
-    if (role === 'faculty') {
-      setCurrentUserState(availableUsers[1] || availableUsers[0]);
-    } else if (role === 'student') {
-      setCurrentUserState(availableUsers[0]);
-    }
   };
 
   const setCurrentUser = (user: UserProfile) => {
     setCurrentUserState(user);
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
   };
 
   const loginUser = async (email: string, password: string): Promise<UserProfile> => {
@@ -564,19 +700,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const backendUser = data.user;
 
     const user: UserProfile = {
-      ...backendUser,
+      id: String(backendUser.id),
+      name: backendUser.name,
+      studentId: `STU-${backendUser.id}`,
+      department: "Campus",
+      year: "Member",
+      phone: "",
+      email: backendUser.email,
       walletBalance: Number(backendUser.wallet_balance ?? 0),
+      role: backendUser.role,
       favoriteItemIds: backendUser.favoriteItemIds ?? [],
     };
 
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
     setCurrentUserState(user);
     setRoleState(user.role);
 
     return user;
   };
 
+  const registerUser = async (
+    name: string,
+    email: string,
+    password: string,
+    role: string = "student"
+  ): Promise<UserProfile> => {
+    await apiRequest("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        role,
+      }),
+    });
+
+    return await loginUser(email, password);
+  };
+
   const logoutUser = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem(STORAGE_KEYS.USER);
     setCurrentUserState(INITIAL_USERS[0]);
     setRoleState("student");
   };
@@ -842,6 +1006,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setOrders((prev) => [newOrder, ...prev]);
 
+      // Join socket room for live status updates
+      socketRef.current?.emit("joinOrder", backendOrder.id);
+
       setMenuItems((prev) =>
         prev.map((menuItem) => {
           const cartItem = cart.find(
@@ -890,30 +1057,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const order = orders.find((o) => o.id === orderId);
     if (!order) return false;
 
-    // Students can cancel before PREPARING
-    if (['PREPARING', 'READY', 'COLLECTED'].includes(order.status)) {
-      alert('Order is already in the kitchen and cannot be cancelled directly.');
-      return false;
-    }
+    // Call backend cancellation endpoint
+    apiRequest(`/orders/${orderId}/cancel`, { method: "PATCH" })
+      .then((data) => {
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === orderId
+              ? { ...o, status: "CANCELLED", updatedAt: new Date().toISOString() }
+              : o
+          )
+        );
 
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: 'CANCELLED', updatedAt: new Date().toISOString() } : o))
-    );
+        if (data.walletBalance !== null && data.walletBalance !== undefined) {
+          setCurrentUserState((prev) => ({
+            ...prev,
+            walletBalance: Number(data.walletBalance),
+          }));
+        }
 
-    // Refund if wallet
-    if (order.paymentMethod === 'wallet' && order.userId === currentUser.id) {
-      setCurrentUserState((prev) => ({
-        ...prev,
-        walletBalance: prev.walletBalance + order.total,
-      }));
-    }
-
-    addNotification({
-      title: `Order #${order.id} Cancelled`,
-      message: `Your order #${order.id} (Token ${order.tokenNumber}) has been cancelled. Payment of â‚¹${order.total} is refunded.`,
-      tokenNumber: order.tokenNumber,
-      type: 'cancelled',
-    });
+        addNotification({
+          title: `Order #${order.id} Cancelled`,
+          message: data.refundProcessed
+            ? `Your order #${order.id} (Token ${order.tokenNumber}) has been cancelled. Payment of ₹${order.total} is refunded to wallet.`
+            : `Your order #${order.id} (Token ${order.tokenNumber}) has been cancelled.`,
+          tokenNumber: order.tokenNumber,
+          type: 'cancelled',
+        });
+      })
+      .catch((err) => {
+        console.error("Cancel order error:", err);
+        alert(err.message || "Unable to cancel order");
+      });
 
     return true;
   };
@@ -1028,6 +1202,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const submitOrderFeedback = (orderId: string, feedback: OrderFeedback) => {
+    apiRequest('/ratings', {
+      method: 'POST',
+      body: JSON.stringify({
+        orderId: Number(orderId),
+        rating: feedback.rating,
+        review: feedback.comment || (feedback.issueReported ? `[Tag: ${feedback.issueReported}]` : null),
+      }),
+    }).catch((err) => {
+      console.warn("Rating API warning:", err);
+    });
+
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, feedback } : o))
     );
@@ -1060,15 +1245,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const topUpWallet = (amount: number) => {
-    setCurrentUserState((prev) => ({
-      ...prev,
-      walletBalance: prev.walletBalance + amount,
-    }));
-    addNotification({
-      title: `Wallet Credited: +â‚¹${amount}`,
-      message: `Your Campus Wallet balance is now â‚¹${currentUser.walletBalance + amount}.`,
-      type: 'info',
-    });
+    apiRequest('/wallet/add-money', {
+      method: 'POST',
+      body: JSON.stringify({ amount }),
+    })
+      .then((data) => {
+        if (data.walletBalance !== undefined) {
+          setCurrentUserState((prev) => ({
+            ...prev,
+            walletBalance: Number(data.walletBalance),
+          }));
+        }
+        addNotification({
+          title: `Wallet Credited: +₹${amount}`,
+          message: `Your Campus Wallet balance is now ₹${data.walletBalance}.`,
+          type: 'info',
+        });
+      })
+      .catch((err) => {
+        console.error("Top-up wallet error:", err);
+        alert(err.message || "Failed to add money to wallet");
+      });
   };
 
   const toggleFavorite = (itemId: string) => {
@@ -1188,6 +1385,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUser,
         setCurrentUser,
         loginUser,
+        registerUser,
         logoutUser,
         availableUsers,
         selectedCanteen,

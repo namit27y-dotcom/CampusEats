@@ -88,3 +88,30 @@ export const addMoney = async (req, res) => {
         connection.release();
     }
 };
+
+export const getTransactions = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const [transactions] = await pool.query(
+            `SELECT id, user_id, amount, type, description, created_at
+             FROM wallet_transactions
+             WHERE user_id = ?
+             ORDER BY created_at DESC`,
+            [userId]
+        );
+
+        res.json({
+            success: true,
+            transactions
+        });
+
+    } catch (error) {
+        console.error("Get transactions error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch wallet transactions"
+        });
+    }
+};

@@ -1,6 +1,58 @@
 import pool from "../config/db.js";
 
-export const getKitchenOrders = async (req, res) => {
+export const getAdminStats = async (req, res) => {
+    try {
+        const [[ordersCount]] = await pool.query("SELECT COUNT(*) AS totalOrders FROM orders");
+        const [[revenueCount]] = await pool.query(
+            "SELECT COALESCE(SUM(total_amount), 0) AS totalRevenue FROM orders WHERE status != 'cancelled'"
+        );
+        const [[activeCount]] = await pool.query(
+            "SELECT COUNT(*) AS activeOrders FROM orders WHERE status IN ('placed', 'accepted', 'preparing', 'ready')"
+        );
+        const [[completedCount]] = await pool.query(
+            "SELECT COUNT(*) AS completedOrders FROM orders WHERE status = 'completed'"
+        );
+        const [[usersCount]] = await pool.query("SELECT COUNT(*) AS totalUsers FROM users");
+
+        res.json({
+            success: true,
+            stats: {
+                totalOrders: Number(ordersCount.totalOrders || 0),
+                totalRevenue: Number(revenueCount.totalRevenue || 0),
+                activeOrders: Number(activeCount.activeOrders || 0),
+                completedOrders: Number(completedCount.completedOrders || 0),
+                totalUsers: Number(usersCount.totalUsers || 0)
+            }
+        });
+    } catch (error) {
+        console.error("Get admin stats error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch admin stats"
+        });
+    }
+};
+
+export const getAdminUsers = async (req, res) => {
+    try {
+        const [users] = await pool.query(
+            "SELECT id, name, email, role, wallet_balance, created_at FROM users ORDER BY id DESC"
+        );
+
+        res.json({
+            success: true,
+            users
+        });
+    } catch (error) {
+        console.error("Get admin users error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch admin users"
+        });
+    }
+};
+
+export const getAdminOrders = async (req, res) => {
     try {
         const [orders] = await pool.query(
             `SELECT
@@ -19,8 +71,7 @@ export const getKitchenOrders = async (req, res) => {
              FROM orders o
              JOIN users u ON o.user_id = u.id
              JOIN canteens c ON o.canteen_id = c.id
-             WHERE o.status IN ('placed', 'accepted', 'preparing', 'ready')
-             ORDER BY o.created_at ASC`
+             ORDER BY o.created_at DESC`
         );
 
         if (orders.length === 0) {
@@ -40,8 +91,7 @@ export const getKitchenOrders = async (req, res) => {
                 oi.price,
                 oi.customization,
                 oi.extra_amount,
-                m.name,
-                m.is_available
+                m.name
              FROM order_items oi
              JOIN menu_items m ON oi.menu_item_id = m.id
              WHERE oi.order_id IN (?)`,
@@ -73,77 +123,11 @@ export const getKitchenOrders = async (req, res) => {
             success: true,
             orders: ordersWithItems
         });
-
     } catch (error) {
-        console.error("Get kitchen orders error:", error);
-
+        console.error("Get admin orders error:", error);
         res.status(500).json({
             success: false,
-            message: "Failed to fetch kitchen orders"
-        });
-    }
-};
-
-export const updateOrderStatus = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
-
-        const allowedStatuses = [
-            "accepted",
-            "preparing",
-            "ready",
-            "completed",
-            "cancelled"
-        ];
-
-        if (!allowedStatuses.includes(status)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid order status"
-            });
-        }
-
-        const [result] = await pool.query(
-            `UPDATE orders
-             SET status = ?
-             WHERE id = ?`,
-            [status, id]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "Order not found"
-            });
-        }
-
-        const io = req.app.get("io");
-
-        if (io) {
-            io.to(`order_${id}`).emit("orderStatusUpdated", {
-                orderId: Number(id),
-                status
-            });
-            io.emit("orderStatusUpdated", {
-                orderId: Number(id),
-                status
-            });
-        }
-
-        res.json({
-            success: true,
-            message: "Order status updated successfully",
-            orderId: Number(id),
-            status
-        });
-
-    } catch (error) {
-        console.error("Update order status error:", error);
-
-        res.status(500).json({
-            success: false,
-            message: "Failed to update order status"
+            message: "Failed to fetch admin orders"
         });
     }
 };

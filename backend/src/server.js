@@ -11,6 +11,8 @@ import orderRoutes from "./routes/orderRoutes.js";
 import walletRoutes from "./routes/walletRoutes.js";
 import kitchenRoutes from "./routes/kitchenRoutes.js";
 import ratingRoutes from "./routes/ratingRoutes.js";
+import counterRoutes from "./routes/counterRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 dotenv.config();
 
@@ -34,7 +36,9 @@ app.use("/api/menu", menuRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/kitchen", kitchenRoutes);
+app.use("/api/counter", counterRoutes);
 app.use("/api/ratings", ratingRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/", (req, res) => {
     res.json({

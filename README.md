@@ -3,226 +3,306 @@
 [![React](https://img.shields.io/badge/React-19.0-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.2-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4.1-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![Vercel](https://img.shields.io/badge/Vercel-Deployable-black?logo=vercel&logoColor=white)](https://vercel.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4.0-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Express.js](https://img.shields.io/badge/Express-4.21-000000?logo=express&logoColor=white)](https://expressjs.com/)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8-010101?logo=socket.io&logoColor=white)](https://socket.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **CampusEats** is a production-grade campus food pre-ordering, digital token issuance, and live kitchen display system. It eliminates peak break-time canteen congestion by replacing physical lines with smart mobile pre-ordering, live token status tracking, and contactless QR pickup verification.
+> **CampusEats** is a full-stack smart canteen pre-ordering, digital token issuance, and kitchen display platform designed for university campuses. It eliminates break-time cafeteria rush by replacing physical queues with digital pre-orders, real-time token tracking via Socket.IO, campus wallet transactions, and fast contactless order handover.
 
 ---
 
 ## Table of Contents
-1. [Project Overview](#project-overview)
-2. [Features by Role](#features-by-role)
+1. [Key Features](#key-features)
+2. [User Roles](#user-roles)
 3. [Tech Stack](#tech-stack)
-4. [Architecture & Folder Structure](#architecture--folder-structure)
-5. [Installation & Local Setup](#installation--local-setup)
-6. [Environment Variables](#environment-variables)
-7. [Development & Build Commands](#development--build-commands)
-8. [Vercel Deployment Guide](#vercel-deployment-guide)
-9. [Database & Service Integration Guide](#database--service-integration-guide)
+4. [System Architecture](#system-architecture)
+5. [Project Structure](#project-structure)
+6. [Database Schema](#database-schema)
+7. [Authentication & Security](#authentication--security)
+8. [API Overview](#api-overview)
+9. [Installation & Setup](#installation--setup)
+10. [Running the Application](#running-the-application)
+11. [End-to-End Testing Guide](#end-to-end-testing-guide)
+12. [Future Improvements](#future-improvements)
 
 ---
 
-## Project Overview
+## Key Features
 
-College and university cafeterias face extreme rush during 15-to-30 minute class breaks, resulting in crowded counters, delayed orders, and food waste. **CampusEats** solves this through a unified role-based portal:
-
-- **Students & Faculty** browse canteens across campus, customize dishes, place pre-orders, and receive instant digital tokens.
-- **Kitchen Staff** process tickets in order of arrival with live prep timers, advancing tickets from `CONFIRMED` to `PREPARING` and `READY`.
-- **Counter Staff** view ready tokens, call tokens aloud using the **Web Speech API**, and verify orders using high-contrast QR tokens before handoff.
-- **Canteen Administrators** track live revenue, order volume, and ticket averages while managing menu items, prices, stock availability, and cooking prep times in real time.
+- **Digital Token Engine**: Generates unique alphanumeric tokens (e.g. `TK-101`) for every order for easy queue tracking.
+- **Real-Time Live Sync**: Powered by Socket.IO, kitchen tickets update automatically without page refreshes, and students receive instant notifications when meals are ready.
+- **Campus Wallet & Atomic Refunds**: Integrated wallet debiting and automated transactional refunds upon order cancellation.
+- **Kitchen Display System (KDS)**: Ticket management with item details, special instructions, and progression from `ACCEPTED` to `PREPARING` and `READY`.
+- **Dedicated Pickup Counter**: Counter staff view ready orders, search tokens, and mark items `COLLECTED`.
+- **Verified Reviews & Ratings**: Only students who completed their meal pickup can submit ratings and feedback.
+- **Fully Responsive UI**: Optimized for mobile devices (320px–430px), tablets (768px–1024px), and desktops.
+- **Modern Login & Quick Personas**: 1-click test account switching across all four campus roles.
 
 ---
 
-## Features by Role
+## User Roles
 
-### 🎓 1. Student & Faculty Ordering Portal
-- **Multi-Canteen Selection**: Toggle between Main Canteen, Engineering Block Cafe, and Hostel Mess with live wait times and serving tokens.
-- **Dietary & Category Filters**: Filter by 100% Pure Veg vs. Non-Veg, and categories (`South Indian`, `North Indian`, `Snacks`, `Beverages`, `Combos`).
-- **Item Customization**: Customize spice level, add-ons (extra sambar, cheese, dips), and special preparation requests.
-- **Cart & Financials**: Subtotal, campus discounts, and tax computation with item quantity management.
-- **Flexible Checkout & Campus Wallet**: Pay via cashless Campus Wallet, UPI, Card, or Pay on Pickup.
-- **Instant Digital Token Generation**: Generates sequential digital tokens (e.g. `#A135`) with persistent order confirmation.
-- **Live 4-Stage Tracker**: Real-time status pipeline (`CONFIRMED` → `PREPARING` → `READY` → `COLLECTED`).
-- **QR Code Verification**: High-contrast SVG QR token displayed on screen for touchless counter scanner check-in.
-- **Order History & Feedback**: View past receipts, re-order favorites with one click, and submit 5-star ratings and food quality reviews.
-
-### 🍳 2. Kitchen Display System (KDS)
-- **Live Ticket Board**: Categorized ticket columns with item quantities, customization notes, and preparation elapsed timers.
-- **Kitchen Workflow Engine**: One-tap progression: `CONFIRMED` → `PREPARING` → `READY`.
-- **Auto-Simulation Option**: Built-in queue simulator for automated kitchen order progression during demonstrations.
-- **Rush Hour Load Meter**: Real-time monitor tracking active orders and kitchen backlog.
-
-### 📢 3. Pickup Counter Dispatch & Calling Board
-- **Live Token Board**: Clean, high-contrast display of tokens ready for customer collection, arranged by counter number.
-- **Automated Voice Calling (Web Speech API)**: Cafeteria announcement audio (*"Token number A135, please collect your order at Counter 1"*).
-- **One-Click Handover**: Mark tokens as `COLLECTED` to clear counter queues and notify students.
-- **Quick Token Lookup**: Instant token search to verify and clear collected orders.
-
-### 📊 4. Admin Dashboard & Inventory Manager
-- **Live Sales Analytics**: Track total gross revenue (₹), total tokens generated, average ticket value, and completion rates.
-- **Menu Catalog Management**: Add new dishes, adjust prices, edit item descriptions, and update photo URLs.
-- **Stock Availability Toggles**: Mark items in-stock or out-of-stock instantly with stock quantity tracking.
-- **Prep Time Adjustments**: Dynamically alter estimated preparation times during high-volume rush periods.
-- **Real-Time Order Activity Feed**: Audit trail of all campus transactions with timestamps.
+| Role | Access & Responsibilities |
+|---|---|
+| **Student** | Browse campus canteens, customize menu items, checkout via wallet or cash/UPI demo, track live digital token status, cancel orders with instant refunds, and leave ratings. |
+| **Kitchen Staff** | View incoming orders in real time, view meal customizations and prep notes, transition order states (`ACCEPTED` -> `PREPARING` -> `READY`). |
+| **Counter Staff** | Dedicated pickup interface, view ready orders, search by digital token number, and complete customer handover (`COLLECTED`). |
+| **Administrator** | Real-time analytics (revenue, order counts, active queues), manage cafeteria menu items, toggle stock availability, and view campus-wide users and orders. |
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology | Description |
-|---|---|---|
-| **Framework** | [React 19](https://react.dev/) | Modern functional UI with concurrent rendering and hooks |
-| **Language** | [TypeScript 5.8](https://www.typescriptlang.org/) | Strict type safety for all models, props, state, and services |
-| **Build Tool** | [Vite 6](https://vitejs.dev/) | Sub-second dev server boot and optimized production bundle |
-| **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) | High-performance CSS engine with warm culinary styling |
-| **Icons** | [Lucide React](https://lucide.dev/) | Modern, accessible SVG icon library |
-| **Animations** | [Motion](https://motion.dev/) | Fluid micro-interactions and route/state transitions |
-| **AI Assistant** | [Google Gemini](https://ai.google.dev/) / Smart Engine | Meal recommendations and natural language cafeteria Q&A |
-| **Audio & Speech** | Web Speech API | Native browser text-to-speech for cafeteria token announcements |
-| **Persistence** | LocalStorage State | Robust, fault-tolerant persistence with zero setup required |
-| **Deployment** | [Vercel](https://vercel.com/) | Zero-config static output deployment with SPA rewrites |
+### Frontend
+- **Framework**: React 19 + TypeScript + Vite
+- **Styling**: Tailwind CSS v4 + Vanilla CSS custom scrollbars & ambient glow
+- **Icons**: Lucide React
+- **Client Networking**: Native Fetch API with typed centralized wrappers (`apiRequest`)
+- **Real-Time Client**: `socket.io-client` v4.8
+
+### Backend
+- **Runtime**: Node.js (ES Modules)
+- **Web Framework**: Express.js
+- **Database**: MySQL 8.x (`mysql2/promise` connection pool)
+- **Authentication**: JSON Web Tokens (JWT) + `bcryptjs` for secure password hashing
+- **WebSockets**: Socket.IO v4.8 (Rooms + Event Broadcasting)
+- **Security**: CORS, Parameterized SQL queries, Role-based middleware
 
 ---
 
-## Architecture & Folder Structure
-
-CampusEats uses a clean modular architecture separating presentation, state management, services, and types:
+## System Architecture
 
 ```
-src/
-├── components/
-│   ├── common/
-│   │   └── QRCodeView.tsx            # High-contrast QR code vector generator
-│   ├── student/
-│   │   ├── StudentView.tsx           # Menu catalog, search, and category filter
-│   │   ├── CartModal.tsx             # Slide-over cart, wallet payment & checkout
-│   │   ├── OrderTrackingModal.tsx    # 4-stage tracking progress & QR pass
-│   │   └── OrderHistoryModal.tsx     # Past order receipts, reorder & ratings
-│   ├── kitchen/
-│   │   └── KitchenDisplaySystem.tsx  # KDS ticket columns & status progression
-│   ├── counter/
-│   │   └── CounterDashboard.tsx      # Ready token board & speech synthesizer
-│   ├── admin/
-│   │   └── AdminPanel.tsx            # Revenue metrics & menu/inventory editor
-│   └── Header.tsx                    # Role switcher, canteen selector & wallet
-│
-├── pages/                            # Role view page wrappers
-│   ├── StudentPage.tsx
-│   ├── KitchenPage.tsx
-│   ├── CounterPage.tsx
-│   ├── AdminPage.tsx
-│   └── index.ts
-│
-├── services/                         # Clean service layer (backend-ready)
-│   ├── storageService.ts             # Typed storage persistence & fallbacks
-│   ├── canteenService.ts             # Canteens & menu catalog operations
-│   ├── orderService.ts               # Token generator & order financial math
-│   └── index.ts
-│
-├── types/                            # Centralized TypeScript definitions
-│   └── index.ts                      # Interfaces: Order, MenuItem, Canteen, etc.
-│
-├── hooks/                            # Custom React hooks
-│   ├── useApp.ts                     # Context access hook
-│   └── index.ts
-│
-├── utils/
-│   └── soundEffects.ts               # Web Speech API token announcer & chimes
-│
-├── context/
-│   └── AppContext.tsx                # Centralized state provider & reducers
-│
-├── data/
-│   └── mockData.ts                   # Initial seed data for canteens & menus
-│
-├── App.tsx                           # Root application layout & active order bar
-├── main.tsx                          # React 19 entry point
-└── index.css                         # Tailwind CSS v4 imports & theme styles
+┌────────────────────────────────────────────────────────┐
+│               Frontend (React 19 + Vite)               │
+│      Student UI │ Kitchen KDS │ Counter │ Admin        │
+└──────────────┬───────────────────────────▲─────────────┘
+               │                           │
+         HTTP REST APIs                Socket.IO
+       (Bearer JWT Auth)            Live State Broadcast
+               │                           │
+┌──────────────▼───────────────────────────┴─────────────┐
+│               Express.js Backend (Node.js)             │
+│   ├── authMiddleware & roleMiddleware                  │
+│   ├── Controllers (auth, order, kitchen, counter, etc.)│
+│   └── Socket.IO Event Engine                           │
+└──────────────────────────────┬─────────────────────────┘
+                               │
+                      Parameterized SQL
+                     Atomic Transactions
+                               │
+┌──────────────────────────────▼─────────────────────────┐
+│                     MySQL Database                     │
+│    users │ canteens │ menu_items │ orders │ ratings    │
+└────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Installation & Local Setup
+## Project Structure
 
-### 1. Prerequisites
-- **Node.js**: `v18.0.0` or later (Node.js 20+ recommended)
-- **npm**: `v9.0.0` or later
+```
+CampusEats/
+├── backend/
+│   ├── src/
+│   │   ├── config/
+│   │   │   └── db.js               # MySQL connection pool
+│   │   ├── controllers/
+│   │   │   ├── adminController.js    # Admin metrics, users, orders
+│   │   │   ├── authController.js     # Register, login, me
+│   │   │   ├── counterController.js  # Counter order retrieval & collection
+│   │   │   ├── kitchenController.js  # Kitchen KDS queue & status advancement
+│   │   │   ├── menuController.js     # Menu retrieval & admin item management
+│   │   │   ├── orderController.js    # Order creation, cancellation & refund
+│   │   │   ├── ratingController.js   # Order ratings & feedback
+│   │   │   └── walletController.js   # Wallet balance, top-up, transactions
+│   │   ├── middlewares/
+│   │   │   └── authMiddleware.js     # JWT verification & role authorization
+│   │   ├── routes/
+│   │   │   ├── adminRoutes.js
+│   │   │   ├── authRoutes.js
+│   │   │   ├── counterRoutes.js
+│   │   │   ├── kitchenRoutes.js
+│   │   │   ├── menuRoutes.js
+│   │   │   ├── orderRoutes.js
+│   │   │   ├── ratingRoutes.js
+│   │   │   └── walletRoutes.js
+│   │   └── server.js                 # Express server & Socket.IO initialization
+│   ├── package.json
+│   └── .env                          # Backend environment configuration
+│
+├── src/
+│   ├── components/
+│   │   ├── admin/                    # Admin panel & analytics
+│   │   ├── common/                   # Shared UI, modals, toasts, cart
+│   │   ├── counter/                  # Counter pickup view
+│   │   ├── kitchen/                  # Kitchen KDS displays
+│   │   ├── student/                  # Menu browsing, active tokens, checkout
+│   │   └── Header.tsx                # Role switcher, wallet balance, profile
+│   ├── context/
+│   │   └── AppContext.tsx            # Global state, real-time sync, role guards
+│   ├── pages/
+│   │   ├── LoginPage.tsx             # Modern auth card & quick test accounts
+│   │   ├── StudentPage.tsx
+│   │   ├── KitchenPage.tsx
+│   │   ├── CounterPage.tsx
+│   │   └── AdminPage.tsx
+│   ├── types/
+│   │   └── index.ts                  # Shared TypeScript interfaces
+│   ├── App.tsx
+│   └── main.tsx
+├── package.json
+└── README.md
+```
 
-### 2. Clone & Install Dependencies
+---
+
+## Database Schema
+
+The system uses a relational MySQL database named `campuseats_db`:
+
+- **`users`**: `id`, `name`, `email`, `password` (bcrypt hash), `role` (`student`, `kitchen`, `counter`, `admin`), `wallet_balance`.
+- **`canteens`**: `id`, `name`, `location`, `opening_time`, `closing_time`, `is_active`.
+- **`menu_items`**: `id`, `canteen_id`, `name`, `description`, `price`, `category`, `prep_time_minutes`, `is_veg`, `is_available`, `stock_quantity`.
+- **`orders`**: `id`, `token_number`, `user_id`, `canteen_id`, `total_amount`, `payment_method`, `payment_status` (`pending`, `paid`, `failed`), `status` (`placed`, `accepted`, `preparing`, `ready`, `completed`, `cancelled`), `created_at`.
+- **`order_items`**: `id`, `order_id`, `menu_item_id`, `quantity`, `price`, `customization`.
+- **`wallet_transactions`**: `id`, `user_id`, `amount`, `type` (`credit`, `debit`), `reference`, `created_at`.
+- **`ratings`**: `id`, `order_id`, `user_id`, `rating` (1–5), `review`, `created_at`.
+
+> **Note on Schema Safety**: The column `orders.payment_status` strictly adheres to `ENUM('pending', 'paid', 'failed')`. Order cancellations maintain `payment_status = 'paid'`, set `status = 'cancelled'`, and record refunds as a `credit` transaction in `wallet_transactions`.
+
+---
+
+## Authentication & Security
+
+1. **Password Security**: Passwords are encrypted before database insertion using `bcryptjs` (salt rounds = 10).
+2. **JWT Tokens**: Emitted upon successful login with an expiration time. Transmitted in standard `Authorization: Bearer <token>` HTTP headers.
+3. **Role-Based Access Control (RBAC)**:
+   - `authMiddleware`: Verifies token signature and checks expiry.
+   - `roleMiddleware(...allowedRoles)`: Rejects unauthorized roles with HTTP 403 Forbidden.
+4. **SQL Injection Defense**: 100% of queries use parameterized bindings (`?`) via `mysql2/promise`.
+5. **Session Verification**: The `/api/auth/me` endpoint ensures frontend local state stays strictly synchronized with the database.
+
+---
+
+## API Overview
+
+| Method | Endpoint | Purpose | Access |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | Create a new user account | Public |
+| `POST` | `/api/auth/login` | Authenticate and receive JWT | Public |
+| `GET` | `/api/auth/me` | Fetch authenticated user profile & balance | Authenticated |
+| `GET` | `/api/menu` | Browse menu items by canteen | Authenticated |
+| `POST` | `/api/menu` | Add new menu item | Admin |
+| `PUT` | `/api/menu/:id` | Update menu item details | Admin |
+| `PATCH` | `/api/menu/:id/toggle` | Toggle menu item availability | Admin |
+| `POST` | `/api/orders` | Create an order with wallet debit & token | Student |
+| `GET` | `/api/orders/my-orders` | Fetch personal order history with ratings | Student |
+| `PATCH` | `/api/orders/:id/cancel` | Cancel order and execute wallet refund | Student (Owner) |
+| `GET` | `/api/kitchen/orders` | Active kitchen queue with customizations | Kitchen / Admin |
+| `PATCH` | `/api/kitchen/orders/:id/status`| Update prep status (`preparing`, `ready`) | Kitchen / Admin |
+| `GET` | `/api/counter/orders` | Ready orders awaiting customer pickup | Counter / Admin |
+| `PATCH` | `/api/counter/orders/:id/collect`| Complete handover (`completed`) | Counter / Admin |
+| `GET` | `/api/wallet/balance` | Retrieve current wallet balance | Authenticated |
+| `POST` | `/api/wallet/add-money` | Top-up student wallet | Authenticated |
+| `GET` | `/api/wallet/transactions` | Fetch wallet transaction statement | Authenticated |
+| `POST` | `/api/ratings` | Submit rating & review for completed meal | Student (Owner) |
+| `GET` | `/api/admin/stats` | Campus analytics, revenue, order totals | Admin |
+| `GET` | `/api/admin/users` | Campus user directory (passwords hidden) | Admin |
+| `GET` | `/api/admin/orders` | Global orders overview | Admin |
+
+---
+
+## Installation & Setup
+
+### Prerequisites
+- Node.js (v18 or higher recommended)
+- MySQL Server running locally on port 3306
+
+### 1. Clone the Repository
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/campuseats.git
-
-# Enter the project directory
-cd campuseats
-
-# Install dependencies
-npm install
+git clone https://github.com/namit27y-dotcom/CampusEats.git
+cd CampusEats
 ```
 
-### 3. Run Development Server
+### 2. Install Dependencies
+```bash
+# Install frontend dependencies
+npm install
+
+# Install backend dependencies
+cd backend
+npm install
+cd ..
+```
+
+### 3. Configure Backend Environment
+Create a `.env` file inside the `backend/` directory:
+```env
+PORT=5000
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+DB_NAME=campuseats_db
+JWT_SECRET=your_super_secret_jwt_key
+CORS_ORIGIN=http://localhost:5173
+```
+
+### 4. Database Setup
+Import the provided SQL schema or initialize the database tables in MySQL:
+```bash
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS campuseats_db;"
+```
+
+---
+
+## Running the Application
+
+### Terminal 1 — Backend Server
+```bash
+cd backend
+npm start
+```
+*Backend runs on `http://localhost:5000`*
+
+### Terminal 2 — Frontend Development Server
 ```bash
 npm run dev
 ```
-Open **`http://localhost:3000`** in your browser to access the application.
+*Frontend runs on `http://localhost:5173`*
 
 ---
 
-## Environment Variables
+## End-to-End Testing Guide
 
-The application runs seamlessly without requiring mandatory external API keys for core pre-ordering and token management. For optional external services, copy the template:
+You can sign in using the **Quick Test Accounts** on the login page:
 
-```bash
-cp .env.example .env
-```
-
-| Variable | Required | Description |
+| Persona | Email | Password |
 |---|---|---|
-| `APP_URL` | Optional | Host URL of the deployed application |
-| `GEMINI_API_KEY` | Optional | Google GenAI key for AI-assisted meal recommendations |
+| **Student** | `student@campuseats.com` | `student123` |
+| **Kitchen Staff** | `kitchen@campuseats.com` | `kitchen123` |
+| **Counter Staff** | `counter@campuseats.com` | `counter123` |
+| **Administrator** | `admin@campuseats.com` | `admin123` |
+
+### Recommended Test Lifecycle:
+1. **Student**: Log in, top up wallet if needed, add food items to cart, checkout. A digital token (e.g. `TK-101`) is generated.
+2. **Kitchen**: Log in as Kitchen. The new order ticket appears in real time via Socket.IO. Click **Start Preparing** $\to$ **Mark Ready**.
+3. **Counter**: Log in as Counter. The order appears in the Ready queue. Click **Mark Collected**.
+4. **Student**: The token marks as completed. Student submits a 5-star rating with review.
 
 ---
 
-## Development & Build Commands
+## Future Improvements
 
-| Command | Action |
-|---|---|
-| `npm run dev` | Starts Vite local development server on `http://localhost:3000` |
-| `npm run build` | Compiles TypeScript and builds production bundles to `/dist` |
-| `npm run preview` | Runs a local static preview server of the `/dist` build |
-| `npm run lint` | Runs TypeScript type checking (`tsc --noEmit`) to verify zero errors |
-| `npm run clean` | Removes build artifacts (`dist/`) |
-
----
-
-## Vercel Deployment Guide
-
-CampusEats is pre-configured with a production-ready `vercel.json` for one-click deployment:
-
-### Deploying via Vercel CLI
-```bash
-# Install Vercel CLI if not already installed
-npm i -g vercel
-
-# Deploy directly
-vercel
-```
-
-### Deploying via Vercel Web Dashboard
-1. Push your code to your **GitHub**, **GitLab**, or **Bitbucket** repository.
-2. Go to [vercel.com/new](https://vercel.com/new).
-3. Import your `campuseats` repository.
-4. Set the build configuration:
-   - **Framework Preset**: `Vite`
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-   - **Install Command**: `npm install`
-5. Click **Deploy**. Vercel will build and host your application with global CDN caching and SSL.
+- **Native Mobile Apps**: React Native or Flutter companion apps for students with push notifications.
+- **Automated Food Lockers**: Integration with IoT smart pickup lockers that unlock via QR scan.
+- **Production Payment Gateway**: Direct integration with Razorpay / Stripe for automated UPI/Card webhooks.
+- **AI Demand Prediction**: Machine learning model forecasting peak break rush based on semester schedules.
 
 ---
 
 ## License
-
-This project is licensed under the MIT License — open for university and cafeteria deployments.
+This project is open source and available under the [MIT License](LICENSE).

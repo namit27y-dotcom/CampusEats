@@ -1,4 +1,4 @@
-﻿import pool from "../config/db.js";
+import pool from "../config/db.js";
 
 export const createOrder = async (req, res) => {
     const connection = await pool.getConnection();
@@ -210,6 +210,41 @@ export const createOrder = async (req, res) => {
 
         await connection.commit();
 
+        const io = req.app.get("io");
+        if (io) {
+            try {
+                const [createdOrders] = await pool.query(
+                    `SELECT
+                        o.id,
+                        o.user_id,
+                        u.name AS student_name,
+                        o.canteen_id,
+                        c.name AS canteen_name,
+                        o.total_amount,
+                        o.token_number,
+                        o.status,
+                        o.payment_method,
+                        o.payment_status,
+                        o.payment_transaction_id,
+                        o.created_at
+                     FROM orders o
+                     JOIN users u ON o.user_id = u.id
+                     JOIN canteens c ON o.canteen_id = c.id
+                     WHERE o.id = ?`,
+                    [orderId]
+                );
+
+                if (createdOrders.length > 0) {
+                    io.emit("newOrderCreated", {
+                        ...createdOrders[0],
+                        items: orderItems
+                    });
+                }
+            } catch (broadcastErr) {
+                console.error("Socket broadcast error:", broadcastErr);
+            }
+        }
+
         res.status(201).json({
             success: true,
             message: "Order placed successfully",
@@ -257,25 +292,206 @@ export const getMyOrders = async (req, res) => {
                 o.payment_method,
                 o.payment_status,
                 o.payment_transaction_id,
-                o.created_at
+                o.created_at,
+                r.rating AS user_rating,
+                r.review AS user_review
              FROM orders o
              JOIN canteens c ON o.canteen_id = c.id
+             LEFT JOIN ratings r ON o.id = r.order_id AND r.user_id = o.user_id
              WHERE o.user_id = ?
              ORDER BY o.created_at DESC`,
             [userId]
         );
 
+        if (orders.length === 0) {
+            return res.json({
+                success: true,
+                orders: []
+            });
+        }
+
+        const orderIds = orders.map((o) => o.id);
+        const [orderItems] = await pool.query(
+            `SELECT
+                oi.id,
+                oi.order_id,
+                oi.menu_item_id,
+                oi.quantity,
+                oi.price,
+                oi.customization,
+                oi.extra_amount,
+                m.name,
+                m.is_available
+             FROM order_items oi
+             JOIN menu_items m ON oi.menu_item_id = m.id
+             WHERE oi.order_id IN (?)`,
+            [orderIds]
+        );
+
+        const itemsByOrderId = {};
+        for (const item of orderItems) {
+            if (!itemsByOrderId[item.order_id]) {
+                itemsByOrderId[item.order_id] = [];
+            }
+            itemsByOrderId[item.order_id].push({
+                id: item.id,
+                menu_item_id: item.menu_item_id,
+                name: item.name,
+                quantity: Number(item.quantity),
+                price: Number(item.price),
+                customization: item.customization,
+                extra_amount: Number(item.extra_amount || 0)
+            });
+        }
+
+        const ordersWithDetails = orders.map((o) => ({
+            ...o,
+            items: itemsByOrderId[o.id] || []
+        }));
+
         res.json({
             success: true,
-            orders
+            orders: ordersWithDetails
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("Get my orders error:", error);
 
         res.status(500).json({
             success: false,
             message: "Failed to fetch orders"
         });
+    }
+};
+
+export const cancelOrder = async (req, res) => {
+    const connection = await pool.getConnection();
+
+    try {
+        const userId = req.user.id;
+        const userRole = req.user.role;
+        const { id } = req.params;
+
+        await connection.beginTransaction();
+
+        const [orders] = await connection.query(
+            `SELECT * FROM orders WHERE id = ? FOR UPDATE`,
+            [id]
+        );
+
+        if (orders.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({
+                success: false,
+                message: "Order not found"
+            });
+        }
+
+        const order = orders[0];
+
+        // Ownership verification: student cannot cancel another student's order
+        if (userRole === "student" && order.user_id !== userId) {
+            await connection.rollback();
+            return res.status(403).json({
+                success: false,
+                message: "Access denied. You cannot cancel another student's order."
+            });
+        }
+
+        if (order.status === "cancelled") {
+            await connection.rollback();
+            return res.status(400).json({
+                success: false,
+                message: "Order is already cancelled"
+            });
+        }
+
+        // Cancellation eligibility check
+        if (["preparing", "ready", "completed"].includes(order.status)) {
+            await connection.rollback();
+            return res.status(400).json({
+                success: false,
+                message: `Cannot cancel order in '${order.status}' status. Food is already in preparation or completed.`
+            });
+        }
+
+        // Wallet refund processing
+        let refundProcessed = false;
+        let newWalletBalance = null;
+
+        if (order.payment_method === "wallet" && order.payment_status === "paid") {
+            const refundDescription = `Refund for cancelled order #${order.id} (Token ${order.token_number})`;
+            const [existingRefund] = await connection.query(
+                `SELECT id FROM wallet_transactions
+                 WHERE user_id = ? AND description LIKE ?`,
+                [order.user_id, `%#${order.id}%`]
+            );
+
+            if (existingRefund.length === 0) {
+                const [userRows] = await connection.query(
+                    `SELECT wallet_balance FROM users WHERE id = ? FOR UPDATE`,
+                    [order.user_id]
+                );
+
+                if (userRows.length > 0) {
+                    const refundAmount = Number(order.total_amount);
+                    await connection.query(
+                        `UPDATE users SET wallet_balance = wallet_balance + ? WHERE id = ?`,
+                        [refundAmount, order.user_id]
+                    );
+
+                    await connection.query(
+                        `INSERT INTO wallet_transactions
+                         (user_id, amount, type, description)
+                         VALUES (?, ?, 'credit', ?)`,
+                        [order.user_id, refundAmount, refundDescription]
+                    );
+
+                    newWalletBalance = Number(userRows[0].wallet_balance) + refundAmount;
+                    refundProcessed = true;
+                }
+            }
+        }
+
+        // Update status to cancelled (preserving enum on payment_status)
+        await connection.query(
+            `UPDATE orders SET status = 'cancelled' WHERE id = ?`,
+            [id]
+        );
+
+        await connection.commit();
+
+        // Emit Socket.IO event
+        const io = req.app.get("io");
+        if (io) {
+            io.to(`order_${id}`).emit("orderStatusUpdated", {
+                orderId: Number(id),
+                status: "cancelled"
+            });
+            io.emit("orderStatusUpdated", {
+                orderId: Number(id),
+                status: "cancelled"
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "Order cancelled successfully",
+            orderId: Number(id),
+            status: "cancelled",
+            refundProcessed,
+            walletBalance: newWalletBalance
+        });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error("Cancel order error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to cancel order"
+        });
+    } finally {
+        connection.release();
     }
 };

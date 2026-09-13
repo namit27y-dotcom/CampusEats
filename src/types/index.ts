@@ -9,7 +9,7 @@ export interface UserProfile {
   phone: string;
   email: string;
   walletBalance: number;
-  role: 'student' | 'faculty';
+  role: UserRole;
   favoriteItemIds: string[];
 }
 
