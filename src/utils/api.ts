@@ -1,10 +1,11 @@
 const rawApiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
 const defaultBaseUrl = (rawApiUrl && rawApiUrl !== 'undefined')
   ? rawApiUrl.replace(/\/+$/, '')
-  : 'http://localhost:5000/api';
+  : '/api';
 
 const candidateUrls: string[] = Array.from(new Set([
   defaultBaseUrl,
+  '/api',
   'http://127.0.0.1:5000/api',
   'http://localhost:5000/api',
 ]));
@@ -46,12 +47,13 @@ export const apiRequest = async (
         ...options,
         headers,
       });
+      // If we got any HTTP response (even 4xx/5xx), the server was reached successfully
       activeBaseUrl = baseUrl;
       lastNetworkError = null;
       break;
     } catch (err: any) {
       lastNetworkError = err;
-      // Continue to next candidate URL
+      // Connection/Network error, continue to next candidate
     }
   }
 

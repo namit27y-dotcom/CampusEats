@@ -25,8 +25,8 @@ const TEST_ACCOUNTS: TestAccount[] = [
   {
     role: "student",
     title: "Student Account",
-    email: "student@campuseats.com",
-    pass: "student123",
+    email: "teststudent@gmail.com",
+    pass: "test123",
   },
   {
     role: "kitchen",
