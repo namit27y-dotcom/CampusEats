@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { StudentPage, KitchenPage, CounterPage, AdminPage } from './pages';
+import { LoginPage } from './pages/LoginPage';
 import { CartModal } from './components/student/CartModal';
 import { OrderTrackingModal } from './components/student/OrderTrackingModal';
 import { OrderHistoryModal } from './components/student/OrderHistoryModal';
@@ -158,10 +159,38 @@ const MainAppContent: React.FC = () => {
   );
 };
 
+const AppContent: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return typeof window !== 'undefined' && Boolean(localStorage.getItem('token'));
+  });
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const hasToken = typeof window !== 'undefined' && Boolean(localStorage.getItem('token'));
+      setIsAuthenticated(hasToken);
+    };
+
+    window.addEventListener('storage', checkAuth);
+    // Poll to catch in-tab changes (e.g. when logoutUser removes token)
+    const interval = setInterval(checkAuth, 400);
+
+    return () => {
+      window.removeEventListener('storage', checkAuth);
+      clearInterval(interval);
+    };
+  }, []);
+
+  if (!isAuthenticated) {
+    return <LoginPage onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
+
+  return <MainAppContent />;
+};
+
 export default function App() {
   return (
     <AppProvider>
-      <MainAppContent />
+      <AppContent />
     </AppProvider>
   );
 }

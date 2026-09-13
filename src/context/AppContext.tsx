@@ -356,114 +356,204 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     pickupSlot: string,
     paymentMethod: 'upi' | 'wallet' | 'card' | 'cash'
   ): Promise<Order> => {
+    // 1. Validate cart is not empty
     if (cart.length === 0) {
       throw new Error('Cart is empty');
     }
 
-    const subtotal = cartTotal;
-    // Campus discount logic: e.g. 10% discount for students over ₹100 or combo bonus
-    const discount = subtotal >= 100 ? 15 : 0;
-    const taxes = 0; // zero tax campus policy
-    const total = Math.max(0, subtotal - discount + taxes);
+    // 2. Convert selected cart items into backend format
+    const rawCanteenId = Number(selectedCanteenId);
+    const canteenId = isNaN(rawCanteenId)
+      ? (parseInt(String(selectedCanteenId).replace(/\D/g, ''), 10) || 1)
+      : rawCanteenId;
 
-    // If wallet payment, check balance and deduct
-    if (paymentMethod === 'wallet') {
-      if (currentUser.walletBalance < total) {
-        throw new Error(`Insufficient wallet balance (₹${currentUser.walletBalance}). Please top-up or choose UPI.`);
-      }
-      setCurrentUserState((prev) => ({
-        ...prev,
-        walletBalance: prev.walletBalance - total,
-      }));
-    }
-
-    // Dynamic queue and prep time calculation
-    // Base prep is the highest prep time item in the order
-    const maxItemPrep = Math.max(...cart.map((c) => c.menuItem.prepTimeMinutes || 5));
-    // Each waiting order adds roughly 1.5 minutes queue buffer
-    const activeQueueOrders = orders.filter(
-      (o) => o.canteenId === selectedCanteen.id && ['ACCEPTED', 'PREPARING'].includes(o.status)
-    ).length;
-    const estimatedPrepMinutes = maxItemPrep + Math.round(activeQueueOrders * 1.5);
-
-    // Calculate estimated ready time
-    const readyDate = new Date(Date.now() + estimatedPrepMinutes * 60 * 1000);
-    const estimatedReadyTime = readyDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    // Counter routing: Counter 1 or Counter 2
-    const pickupCounter = selectedCanteen.counters[Math.floor(Math.random() * Math.min(2, selectedCanteen.counters.length))] || 'Pickup Counter 1';
-
-    const tokenNumber = generateSmartToken(selectedCanteen);
-    const orderId = `CE${Math.floor(10000 + Math.random() * 90000)}`;
-
-    const newOrder: Order = {
-      id: orderId,
-      tokenNumber,
-      userId: currentUser.id,
-      userName: currentUser.name,
-      userRole: currentUser.role,
-      canteenId: selectedCanteen.id,
-      canteenName: selectedCanteen.name,
-      items: cart.map((item) => ({
-        id: item.menuItem.id,
-        name: item.menuItem.name,
-        price: item.unitPrice,
-        quantity: item.quantity,
-        isVeg: item.menuItem.isVeg,
-        customizationText: Object.entries(item.selectedCustomizations)
-          .map(([k, v]) => `${v}`)
-          .join(', ') || undefined,
-      })),
-      subtotal,
-      discount,
-      taxes,
-      total,
-      paymentMethod,
-      paymentTransactionId:
-        paymentMethod === 'upi'
-          ? `UPI-${Math.floor(1000000000 + Math.random() * 9000000000)}`
-          : paymentMethod === 'wallet'
-          ? `CW-WALLET-${Math.floor(10000 + Math.random() * 90000)}`
-          : `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
-      paymentStatus: 'PAID',
-      status: 'CONFIRMED',
-      pickupSlot,
-      pickupCounter,
-      estimatedReadyTime,
-      estimatedPrepMinutes,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+    const backendPayload = {
+      canteenId,
+      items: cart.map((item) => {
+        const rawItemId = Number(item.menuItem.id);
+        const menuItemId = isNaN(rawItemId)
+          ? (parseInt(String(item.menuItem.id).replace(/\D/g, ''), 10) || 1)
+          : rawItemId;
+        return {
+          menuItemId,
+          quantity: item.quantity,
+        };
+      }),
     };
 
-    // Deduct stock in menu and inventory
-    cart.forEach((c) => {
-      setMenuItems((prev) =>
-        prev.map((m) =>
-          m.id === c.menuItem.id
-            ? {
-                ...m,
-                stockQuantity: Math.max(0, m.stockQuantity - c.quantity),
-                inStock: m.stockQuantity - c.quantity > 0,
-              }
-            : m
-        )
+    // Helper to map backend status values to frontend OrderStatus
+    const mapBackendStatus = (backendStatus?: string): OrderStatus => {
+      if (!backendStatus) return 'CONFIRMED';
+      const s = String(backendStatus).toLowerCase().trim();
+      switch (s) {
+        case 'placed':
+          return 'CONFIRMED';
+        case 'accepted':
+          return 'ACCEPTED';
+        case 'preparing':
+          return 'PREPARING';
+        case 'ready':
+          return 'READY';
+        case 'completed':
+        case 'collected':
+          return 'COLLECTED';
+        case 'cancelled':
+        case 'canceled':
+          return 'CANCELLED';
+        default: {
+          const upper = backendStatus.toUpperCase() as OrderStatus;
+          if (['CREATED', 'CONFIRMED', 'ACCEPTED', 'PREPARING', 'READY', 'COLLECTED', 'CANCELLED'].includes(upper)) {
+            return upper;
+          }
+          return 'CONFIRMED';
+        }
+      }
+    };
+
+    try {
+      // 3. Call POST /api/orders using existing apiRequest() helper
+      const data = await apiRequest('/orders', {
+        method: 'POST',
+        body: JSON.stringify(backendPayload),
+      });
+
+      const backendOrder = data?.order || data;
+      if (!backendOrder) {
+        throw new Error('Invalid order response received from backend.');
+      }
+
+      // 4. Extract backend generated ID, token number, and status (no manual generation)
+      const orderId = String(backendOrder.id ?? backendOrder.order_id ?? backendOrder.orderId ?? '');
+      const tokenNumber = String(
+        backendOrder.token_number ??
+        backendOrder.tokenNumber ??
+        backendOrder.token ??
+        ''
       );
-    });
+      const orderStatus: OrderStatus = mapBackendStatus(backendOrder.status);
 
-    setOrders((prev) => [newOrder, ...prev]);
-    clearCart();
+      // 5. Convert backend wallet_balance to frontend walletBalance if returned
+      const returnedWalletBalance =
+        data?.wallet_balance ??
+        data?.walletBalance ??
+        backendOrder?.wallet_balance ??
+        backendOrder?.walletBalance ??
+        data?.user?.wallet_balance ??
+        data?.user?.walletBalance;
 
-    // Play chime sound
-    playOrderPlacedSound();
+      if (returnedWalletBalance !== undefined && returnedWalletBalance !== null) {
+        const parsedBalance = Number(returnedWalletBalance);
+        if (!isNaN(parsedBalance)) {
+          setCurrentUserState((prev) => ({
+            ...prev,
+            walletBalance: parsedBalance,
+          }));
+        }
+      }
 
-    addNotification({
-      title: `Order Placed: Token ${tokenNumber} 🎉`,
-      message: `Your order #${orderId} is confirmed at ${selectedCanteen.name}. Estimated Ready: ${estimatedReadyTime}`,
-      tokenNumber,
-      type: 'order_confirmed',
-    });
+      // 6. Construct frontend Order object preserving existing structure
+      const subtotal = cartTotal;
+      const discount = subtotal >= 100 ? 15 : 0;
+      const taxes = 0;
+      const total =
+        backendOrder.total_amount !== undefined
+          ? Number(backendOrder.total_amount)
+          : backendOrder.total !== undefined
+          ? Number(backendOrder.total)
+          : Math.max(0, subtotal - discount + taxes);
 
-    return newOrder;
+      const maxItemPrep = Math.max(...cart.map((c) => c.menuItem.prepTimeMinutes || 5));
+      const estimatedPrepMinutes =
+        Number(backendOrder.estimated_prep_minutes || backendOrder.estimatedPrepMinutes) || maxItemPrep;
+      const readyDate = new Date(Date.now() + estimatedPrepMinutes * 60 * 1000);
+      const estimatedReadyTime =
+        backendOrder.estimated_ready_time ||
+        backendOrder.estimatedReadyTime ||
+        readyDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      const pickupCounter =
+        backendOrder.pickup_counter ||
+        backendOrder.pickupCounter ||
+        selectedCanteen.counters[0] ||
+        'Pickup Counter 1';
+
+      const newOrder: Order = {
+        id: orderId,
+        tokenNumber,
+        userId: String(backendOrder.user_id || backendOrder.userId || currentUser.id),
+        userName: backendOrder.user_name || backendOrder.userName || currentUser.name,
+        userRole: (currentUser.role as 'student' | 'faculty') || 'student',
+        canteenId: String(backendOrder.canteen_id || backendOrder.canteenId || selectedCanteen.id),
+        canteenName: backendOrder.canteen_name || backendOrder.canteenName || selectedCanteen.name,
+        items: cart.map((item) => ({
+          id: String(item.menuItem.id),
+          name: item.menuItem.name,
+          price: item.unitPrice,
+          quantity: item.quantity,
+          isVeg: item.menuItem.isVeg,
+          customizationText:
+            Object.entries(item.selectedCustomizations)
+              .map(([k, v]) => `${v}`)
+              .join(', ') || undefined,
+        })),
+        subtotal: Number(backendOrder.subtotal ?? subtotal),
+        discount: Number(backendOrder.discount ?? discount),
+        taxes: Number(backendOrder.taxes ?? taxes),
+        total,
+        paymentMethod,
+        paymentTransactionId:
+          backendOrder.payment_transaction_id ||
+          backendOrder.paymentTransactionId ||
+          (paymentMethod === 'upi'
+            ? `UPI-${Math.floor(1000000000 + Math.random() * 9000000000)}`
+            : paymentMethod === 'wallet'
+            ? `CW-WALLET-${Math.floor(10000 + Math.random() * 90000)}`
+            : `TXN-${Math.floor(100000 + Math.random() * 900000)}`),
+        paymentStatus: 'PAID',
+        status: orderStatus,
+        pickupSlot: backendOrder.pickup_slot || backendOrder.pickupSlot || pickupSlot,
+        pickupCounter,
+        estimatedReadyTime,
+        estimatedPrepMinutes,
+        createdAt: backendOrder.created_at || backendOrder.createdAt || new Date().toISOString(),
+        updatedAt: backendOrder.updated_at || backendOrder.updatedAt || new Date().toISOString(),
+      };
+
+      // Deduct stock in menu and inventory locally
+      cart.forEach((c) => {
+        setMenuItems((prev) =>
+          prev.map((m) =>
+            m.id === c.menuItem.id
+              ? {
+                  ...m,
+                  stockQuantity: Math.max(0, m.stockQuantity - c.quantity),
+                  inStock: m.stockQuantity - c.quantity > 0,
+                }
+              : m
+          )
+        );
+      });
+
+      // 7. Add order to existing orders state, clear cart, sound & notification
+      setOrders((prev) => [newOrder, ...prev]);
+      clearCart();
+
+      // Play chime sound
+      playOrderPlacedSound();
+
+      addNotification({
+        title: `Order Placed: Token ${tokenNumber || orderId} 🎉`,
+        message: `Your order #${orderId} is confirmed at ${selectedCanteen.name}. Estimated Ready: ${estimatedReadyTime}`,
+        tokenNumber,
+        type: 'order_confirmed',
+      });
+
+      return newOrder;
+    } catch (err: unknown) {
+      const errorMsg =
+        err instanceof Error ? err.message : 'Failed to place order. Please try again.';
+      throw new Error(errorMsg);
+    }
   };
 
   const cancelOrder = (orderId: string): boolean => {
