@@ -1,29 +1,55 @@
-const API_URL = import.meta.env.VITE_API_URL;
+const rawApiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+export const API_BASE_URL = (rawApiUrl && rawApiUrl !== 'undefined')
+  ? rawApiUrl.replace(/\/+$/, '')
+  : 'http://localhost:5000/api';
 
 export const apiRequest = async (
-    endpoint: string,
-    options: RequestInit = {}
+  endpoint: string,
+  options: RequestInit = {}
 ) => {
-    const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
+  const headers = new Headers(options.headers);
 
-    const headers = new Headers(options.headers);
+  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
 
-    headers.set("Content-Type", "application/json");
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
 
-    if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-    }
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const fullUrl = `${API_BASE_URL}${cleanEndpoint}`;
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
-        ...options,
-        headers
+  let response: Response;
+  try {
+    response = await fetch(fullUrl, {
+      ...options,
+      headers,
     });
+  } catch (err: any) {
+    throw new Error(
+      `Unable to reach server at ${API_BASE_URL}. Please ensure the backend is running.`
+    );
+  }
 
-    const data = await response.json();
-
-    if (!response.ok) {
-        throw new Error(data.message || "Something went wrong");
+  const text = await response.text();
+  let data: any = {};
+  if (text && text.trim()) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { message: text };
     }
+  }
 
-    return data;
+  if (!response.ok) {
+    const errorMsg =
+      data.message ||
+      data.error ||
+      `Request failed with status ${response.status} (${response.statusText})`;
+    throw new Error(errorMsg);
+  }
+
+  return data;
 };
