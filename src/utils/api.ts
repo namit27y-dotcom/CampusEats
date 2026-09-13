@@ -1,7 +1,17 @@
 const rawApiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
-export const API_BASE_URL = (rawApiUrl && rawApiUrl !== 'undefined')
+const defaultBaseUrl = (rawApiUrl && rawApiUrl !== 'undefined')
   ? rawApiUrl.replace(/\/+$/, '')
   : 'http://localhost:5000/api';
+
+const candidateUrls: string[] = Array.from(new Set([
+  defaultBaseUrl,
+  'http://127.0.0.1:5000/api',
+  'http://localhost:5000/api',
+]));
+
+let activeBaseUrl = candidateUrls[0];
+
+export const getApiBaseUrl = () => activeBaseUrl;
 
 export const apiRequest = async (
   endpoint: string,
@@ -19,17 +29,35 @@ export const apiRequest = async (
   }
 
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const fullUrl = `${API_BASE_URL}${cleanEndpoint}`;
 
-  let response: Response;
-  try {
-    response = await fetch(fullUrl, {
-      ...options,
-      headers,
-    });
-  } catch (err: any) {
+  // Prioritize activeBaseUrl, followed by other candidate URLs if network fails
+  const urlsToTry = [
+    activeBaseUrl,
+    ...candidateUrls.filter((u) => u !== activeBaseUrl),
+  ];
+
+  let response: Response | null = null;
+  let lastNetworkError: any = null;
+
+  for (const baseUrl of urlsToTry) {
+    const fullUrl = `${baseUrl}${cleanEndpoint}`;
+    try {
+      response = await fetch(fullUrl, {
+        ...options,
+        headers,
+      });
+      activeBaseUrl = baseUrl;
+      lastNetworkError = null;
+      break;
+    } catch (err: any) {
+      lastNetworkError = err;
+      // Continue to next candidate URL
+    }
+  }
+
+  if (!response) {
     throw new Error(
-      `Unable to reach server at ${API_BASE_URL}. Please ensure the backend is running.`
+      `Unable to reach backend server. Please verify the backend is running on port 5000 (${lastNetworkError?.message || 'Network request failed'}).`
     );
   }
 
