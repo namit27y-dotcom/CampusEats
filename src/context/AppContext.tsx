@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   UserRole,
   UserProfile,
@@ -22,6 +22,7 @@ import {
 } from '../data/mockData';
 import { playOrderPlacedSound, playOrderReadyChime, announceTokenVoice } from '../utils/soundEffects';
 import { apiRequest } from '../utils/api';
+import { io } from 'socket.io-client';
 
 interface AppContextType {
   currentRole: UserRole;
@@ -142,7 +143,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [notifications, setNotifications] = useState<AppNotification[]>([
     {
       id: 'notif-welcome',
-      title: 'Welcome to CampusEats! 🚀',
+      title: 'Welcome to CampusEats! ðŸš€',
       message: 'Skip canteen queues! Pre-order now and collect with your live digital token.',
       type: 'info',
       timestamp: 'Just now',
@@ -151,10 +152,356 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ]);
 
   // Demo auto-simulation switch
-  const [autoSimulateKitchen, setAutoSimulateKitchenState] = useState<boolean>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.AUTO_SIM);
-    return saved !== null ? JSON.parse(saved) : true;
-  });
+  const [autoSimulateKitchen, setAutoSimulateKitchenState] = useState<boolean>(false);
+
+  // Load real canteen and menu data from backend
+  useEffect(() => {
+    const loadBackendData = async () => {
+      try {
+        const canteenData = await apiRequest("/canteens");
+
+        if (canteenData.canteens?.length > 0) {
+          setCanteens((prev) =>
+            canteenData.canteens.map((backendCanteen: any, index: number) => {
+              const existing = prev[index] || prev[0];
+
+              return {
+                ...existing,
+                id: String(backendCanteen.id),
+                name: backendCanteen.name,
+                location: backendCanteen.location || existing?.location || "",
+                isActive: Boolean(backendCanteen.is_active),
+              };
+            })
+          );
+
+          setSelectedCanteenId(String(canteenData.canteens[0].id));
+        }
+
+        const firstCanteenId = canteenData.canteens?.[0]?.id;
+
+        if (firstCanteenId) {
+          const menuData = await apiRequest(`/menu/${firstCanteenId}`);
+
+          if (menuData.items?.length > 0) {
+            setMenuItems((prev) =>
+              menuData.items.map((backendItem: any) => {
+                const existing = prev.find(
+                  (item) => item.name.toLowerCase() === backendItem.name.toLowerCase()
+                );
+
+                const categoryMap: Record<string, MenuItem["category"]> = {
+                  breakfast: "breakfast",
+                  meals: "meals",
+                  "meals & bowls": "meals",
+                  snacks: "snacks",
+                  beverages: "drinks",
+                  drinks: "drinks",
+                  combos: "combos",
+                };
+
+                const backendCategory = String(
+                  backendItem.category || "snacks"
+                ).toLowerCase();
+
+                return {
+                  ...existing,
+                  id: String(backendItem.id),
+                  canteenId: String(backendItem.canteen_id),
+                  name: backendItem.name,
+                  description:
+                    backendItem.description ||
+                    existing?.description ||
+                    "",
+                  price: Number(backendItem.price),
+                  category:
+                    categoryMap[backendCategory] ||
+                    existing?.category ||
+                    "snacks",
+                  isVeg: existing?.isVeg ?? true,
+                  rating: existing?.rating ?? 4.5,
+                  ratingCount: existing?.ratingCount ?? 0,
+                  prepTimeMinutes:
+                    existing?.prepTimeMinutes ?? 10,
+                  inStock: Boolean(backendItem.is_available),
+                  stockQuantity: existing?.stockQuantity ?? 100,
+                  maxStock: existing?.maxStock ?? 100,
+                  image:
+                    existing?.image ||
+                    backendItem.image_url ||
+                    "",
+                  isPopular: existing?.isPopular ?? false,
+                  isOffer: existing?.isOffer ?? false,
+                  offerTag: existing?.offerTag,
+                  calories: existing?.calories,
+                  customizations: existing?.customizations,
+                };
+              })
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load backend canteen/menu data:", error);
+      }
+    };
+
+    loadBackendData();
+  }, []);
+  // Load authenticated user's real orders from backend
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token || !currentUser?.id) return;
+
+    // Student orders should not overwrite Kitchen/Admin orders
+    if (["kitchen", "admin"].includes(String(currentUser.role).toLowerCase())) {
+      return;
+    }
+
+    const loadMyOrders = async () => {
+      try {
+        const data = await apiRequest("/orders/my-orders");
+
+        if (!data.success || !Array.isArray(data.orders)) {
+          return;
+        }
+
+        const statusMap: Record<string, OrderStatus> = {
+          placed: "CONFIRMED",
+          accepted: "ACCEPTED",
+          preparing: "PREPARING",
+          ready: "READY",
+          completed: "COLLECTED",
+          cancelled: "CANCELLED",
+        };
+
+        setOrders((prev) => {
+          const previousOrders = new Map(
+            prev.map((order) => [String(order.id), order])
+          );
+
+          const backendOrders: Order[] = data.orders.map((backendOrder: any) => {
+            const existing = previousOrders.get(String(backendOrder.id));
+
+            return {
+              id: String(backendOrder.id),
+              tokenNumber: String(backendOrder.token_number),
+              userId: String(currentUser.id),
+              userName: currentUser.name,
+              userRole: currentUser.role,
+
+              canteenId: String(backendOrder.canteen_id),
+              canteenName: backendOrder.canteen_name,
+
+              items: existing?.items || [],
+
+              subtotal: Number(backendOrder.total_amount),
+              discount: 0,
+              taxes: 0,
+              total: Number(backendOrder.total_amount),
+
+              paymentMethod: backendOrder.payment_method,
+              paymentTransactionId:
+                backendOrder.payment_transaction_id || undefined,
+              paymentStatus:
+                String(
+                  backendOrder.payment_status || "pending"
+                ).toUpperCase() as any,
+
+              status:
+                statusMap[String(backendOrder.status).toLowerCase()] ||
+                "CONFIRMED",
+
+              pickupSlot: existing?.pickupSlot || "",
+              pickupCounter:
+                existing?.pickupCounter || "Pickup Counter 1",
+              estimatedReadyTime:
+                existing?.estimatedReadyTime || "",
+              estimatedPrepMinutes:
+                existing?.estimatedPrepMinutes || 10,
+
+              createdAt:
+                backendOrder.created_at || existing?.createdAt || new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+
+              feedback: existing?.feedback,
+            };
+          });
+
+          return backendOrders;
+        });
+
+        console.log(
+          `Loaded ${data.orders.length} real orders from backend`
+        );
+      } catch (error) {
+        console.error("Failed to load real orders:", error);
+      }
+    };
+
+    loadMyOrders();
+  }, [currentUser?.id]);
+
+  // Load real kitchen orders from backend
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token || !currentUser?.id) return;
+
+    const loadKitchenOrders = async () => {
+      if (!["kitchen", "admin"].includes(String(currentUser.role).toLowerCase())) {
+        return;
+      }
+
+      try {
+        const data = await apiRequest("/kitchen/orders");
+
+        if (!data.success || !Array.isArray(data.orders)) {
+          console.error("Invalid kitchen orders response:", data);
+          return;
+        }
+
+        const statusMap: Record<string, OrderStatus> = {
+          placed: "CONFIRMED",
+          accepted: "ACCEPTED",
+          preparing: "PREPARING",
+          ready: "READY",
+          completed: "COLLECTED",
+          cancelled: "CANCELLED",
+        };
+
+        setOrders((prev) => {
+          const previousOrders = new Map(
+            prev.map((order) => [String(order.id), order])
+          );
+
+          return data.orders.map((backendOrder: any) => {
+            const existing = previousOrders.get(String(backendOrder.id));
+
+            return {
+              id: String(backendOrder.id),
+              tokenNumber: String(backendOrder.token_number),
+              userId: String(backendOrder.user_id),
+              userName: backendOrder.student_name || "Student",
+              userRole: "student",
+
+              canteenId: String(backendOrder.canteen_id),
+              canteenName: backendOrder.canteen_name,
+
+              items: existing?.items || [],
+
+              subtotal: Number(backendOrder.total_amount),
+              discount: 0,
+              taxes: 0,
+              total: Number(backendOrder.total_amount),
+
+              paymentMethod: existing?.paymentMethod || "wallet",
+              paymentTransactionId:
+                existing?.paymentTransactionId,
+
+              paymentStatus:
+                existing?.paymentStatus || "PAID",
+
+              status:
+                statusMap[String(backendOrder.status).toLowerCase()] ||
+                "CONFIRMED",
+
+              pickupSlot: existing?.pickupSlot || "",
+              pickupCounter:
+                existing?.pickupCounter || "Pickup Counter 1",
+
+              estimatedReadyTime:
+                existing?.estimatedReadyTime || "",
+
+              estimatedPrepMinutes:
+                existing?.estimatedPrepMinutes || 10,
+
+              createdAt:
+                backendOrder.created_at ||
+                existing?.createdAt ||
+                new Date().toISOString(),
+
+              updatedAt: new Date().toISOString(),
+
+              feedback: existing?.feedback,
+            };
+          });
+        });
+
+        console.log(
+          `Loaded ${data.orders.length} real kitchen orders from backend`
+        );
+      } catch (error) {
+        console.error("Failed to load kitchen orders:", error);
+      }
+    };
+
+    loadKitchenOrders();
+  }, [currentUser?.id, currentUser?.role]);
+
+  // Real-time order status synchronization
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token || !currentUser?.id) return;
+
+    const socket = io("http://localhost:5000", {
+      transports: ["websocket"],
+    });
+
+    socket.on("connect", () => {
+      console.log("CampusEats Socket.IO connected");
+
+      orders
+        .filter((order) =>
+          ["CONFIRMED", "ACCEPTED", "PREPARING", "READY"].includes(order.status)
+        )
+        .forEach((order) => {
+          socket.emit("joinOrder", order.id);
+        });
+    });
+
+    socket.on(
+      "orderStatusUpdated",
+      (data: { orderId: number; status: string }) => {
+        console.log("Live order status:", data);
+
+        const statusMap: Record<string, OrderStatus> = {
+          placed: "CONFIRMED",
+          accepted: "ACCEPTED",
+          preparing: "PREPARING",
+          ready: "READY",
+          completed: "COLLECTED",
+          cancelled: "CANCELLED",
+        };
+
+        const newStatus =
+          statusMap[String(data.status).toLowerCase()];
+
+        if (!newStatus) return;
+
+        setOrders((prev) =>
+          prev.map((order) =>
+            Number(order.id) === Number(data.orderId)
+              ? {
+                  ...order,
+                  status: newStatus,
+                  updatedAt: new Date().toISOString(),
+                }
+              : order
+          )
+        );
+      }
+    );
+
+    socket.on("disconnect", () => {
+      console.log("CampusEats Socket.IO disconnected");
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [currentUser?.id]);
 
   // Persist key states
   useEffect(() => {
@@ -233,7 +580,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUserState(INITIAL_USERS[0]);
     setRoleState("student");
   };
-
   // Add Notification helper
   const addNotification = useCallback((notif: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => {
     const newNotif: AppNotification = {
@@ -356,203 +702,187 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     pickupSlot: string,
     paymentMethod: 'upi' | 'wallet' | 'card' | 'cash'
   ): Promise<Order> => {
-    // 1. Validate cart is not empty
     if (cart.length === 0) {
       throw new Error('Cart is empty');
     }
 
-    // 2. Convert selected cart items into backend format
-    const rawCanteenId = Number(selectedCanteenId);
-    const canteenId = isNaN(rawCanteenId)
-      ? (parseInt(String(selectedCanteenId).replace(/\D/g, ''), 10) || 1)
-      : rawCanteenId;
 
-    const backendPayload = {
-      canteenId,
-      items: cart.map((item) => {
-        const rawItemId = Number(item.menuItem.id);
-        const menuItemId = isNaN(rawItemId)
-          ? (parseInt(String(item.menuItem.id).replace(/\D/g, ''), 10) || 1)
-          : rawItemId;
-        return {
-          menuItemId,
-          quantity: item.quantity,
-        };
-      }),
-    };
+    const canteenId = Number(selectedCanteen.id);
 
-    // Helper to map backend status values to frontend OrderStatus
-    const mapBackendStatus = (backendStatus?: string): OrderStatus => {
-      if (!backendStatus) return 'CONFIRMED';
-      const s = String(backendStatus).toLowerCase().trim();
-      switch (s) {
-        case 'placed':
-          return 'CONFIRMED';
-        case 'accepted':
-          return 'ACCEPTED';
-        case 'preparing':
-          return 'PREPARING';
-        case 'ready':
-          return 'READY';
-        case 'completed':
-        case 'collected':
-          return 'COLLECTED';
-        case 'cancelled':
-        case 'canceled':
-          return 'CANCELLED';
-        default: {
-          const upper = backendStatus.toUpperCase() as OrderStatus;
-          if (['CREATED', 'CONFIRMED', 'ACCEPTED', 'PREPARING', 'READY', 'COLLECTED', 'CANCELLED'].includes(upper)) {
-            return upper;
-          }
-          return 'CONFIRMED';
-        }
-      }
-    };
+    const items = cart.map((item) => {
+      const extraAmount = Math.max(
+        0,
+        Number(item.unitPrice) - Number(item.menuItem.price)
+      );
+
+      const customization =
+        Object.entries(item.selectedCustomizations)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join(' • ') || null;
+
+      return {
+        menuItemId: Number(item.menuItem.id),
+        quantity: item.quantity,
+        extraAmount,
+        customization,
+      };
+    });
 
     try {
-      // 3. Call POST /api/orders using existing apiRequest() helper
       const data = await apiRequest('/orders', {
         method: 'POST',
-        body: JSON.stringify(backendPayload),
+        body: JSON.stringify({
+          canteenId,
+          items,
+          paymentMethod,
+        }),
       });
 
-      const backendOrder = data?.order || data;
-      if (!backendOrder) {
-        throw new Error('Invalid order response received from backend.');
+      if (!data.success || !data.order) {
+        throw new Error(data.message || 'Failed to place order');
       }
 
-      // 4. Extract backend generated ID, token number, and status (no manual generation)
-      const orderId = String(backendOrder.id ?? backendOrder.order_id ?? backendOrder.orderId ?? '');
-      const tokenNumber = String(
-        backendOrder.token_number ??
-        backendOrder.tokenNumber ??
-        backendOrder.token ??
-        ''
-      );
-      const orderStatus: OrderStatus = mapBackendStatus(backendOrder.status);
+      const backendOrder = data.order;
 
-      // 5. Convert backend wallet_balance to frontend walletBalance if returned
-      const returnedWalletBalance =
-        data?.wallet_balance ??
-        data?.walletBalance ??
-        backendOrder?.wallet_balance ??
-        backendOrder?.walletBalance ??
-        data?.user?.wallet_balance ??
-        data?.user?.walletBalance;
-
-      if (returnedWalletBalance !== undefined && returnedWalletBalance !== null) {
-        const parsedBalance = Number(returnedWalletBalance);
-        if (!isNaN(parsedBalance)) {
-          setCurrentUserState((prev) => ({
-            ...prev,
-            walletBalance: parsedBalance,
-          }));
-        }
-      }
-
-      // 6. Construct frontend Order object preserving existing structure
       const subtotal = cartTotal;
       const discount = subtotal >= 100 ? 15 : 0;
       const taxes = 0;
-      const total =
-        backendOrder.total_amount !== undefined
-          ? Number(backendOrder.total_amount)
-          : backendOrder.total !== undefined
-          ? Number(backendOrder.total)
-          : Math.max(0, subtotal - discount + taxes);
+      const total = Number(backendOrder.totalAmount);
 
-      const maxItemPrep = Math.max(...cart.map((c) => c.menuItem.prepTimeMinutes || 5));
+      const maxItemPrep = Math.max(
+        ...cart.map((c) => c.menuItem.prepTimeMinutes || 5)
+      );
+
+      const activeQueueOrders = orders.filter(
+        (o) =>
+          o.canteenId === selectedCanteen.id &&
+          ['CONFIRMED', 'ACCEPTED', 'PREPARING'].includes(o.status)
+      ).length;
+
       const estimatedPrepMinutes =
-        Number(backendOrder.estimated_prep_minutes || backendOrder.estimatedPrepMinutes) || maxItemPrep;
-      const readyDate = new Date(Date.now() + estimatedPrepMinutes * 60 * 1000);
-      const estimatedReadyTime =
-        backendOrder.estimated_ready_time ||
-        backendOrder.estimatedReadyTime ||
-        readyDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        maxItemPrep + Math.round(activeQueueOrders * 1.5);
+
+      const readyDate = new Date(
+        Date.now() + estimatedPrepMinutes * 60 * 1000
+      );
+
+      const estimatedReadyTime = readyDate.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
 
       const pickupCounter =
-        backendOrder.pickup_counter ||
-        backendOrder.pickupCounter ||
-        selectedCanteen.counters[0] ||
-        'Pickup Counter 1';
+        selectedCanteen.counters[
+          Math.floor(
+            Math.random() * Math.min(2, selectedCanteen.counters.length)
+          )
+        ] || 'Pickup Counter 1';
+
+      const statusMap: Record<string, OrderStatus> = {
+        placed: 'CONFIRMED',
+        accepted: 'ACCEPTED',
+        preparing: 'PREPARING',
+        ready: 'READY',
+        completed: 'COLLECTED',
+        cancelled: 'CANCELLED',
+      };
+
+      const frontendStatus =
+        statusMap[backendOrder.status] || 'CONFIRMED';
 
       const newOrder: Order = {
-        id: orderId,
-        tokenNumber,
-        userId: String(backendOrder.user_id || backendOrder.userId || currentUser.id),
-        userName: backendOrder.user_name || backendOrder.userName || currentUser.name,
-        userRole: (currentUser.role as 'student' | 'faculty') || 'student',
-        canteenId: String(backendOrder.canteen_id || backendOrder.canteenId || selectedCanteen.id),
-        canteenName: backendOrder.canteen_name || backendOrder.canteenName || selectedCanteen.name,
+        id: String(backendOrder.id),
+        tokenNumber: backendOrder.tokenNumber,
+        userId: currentUser.id,
+        userName: currentUser.name,
+        userRole: currentUser.role,
+        canteenId: selectedCanteen.id,
+        canteenName: selectedCanteen.name,
+
         items: cart.map((item) => ({
-          id: String(item.menuItem.id),
+          id: item.menuItem.id,
           name: item.menuItem.name,
           price: item.unitPrice,
           quantity: item.quantity,
           isVeg: item.menuItem.isVeg,
           customizationText:
             Object.entries(item.selectedCustomizations)
-              .map(([k, v]) => `${v}`)
+              .map(([_, value]) => value)
               .join(', ') || undefined,
         })),
-        subtotal: Number(backendOrder.subtotal ?? subtotal),
-        discount: Number(backendOrder.discount ?? discount),
-        taxes: Number(backendOrder.taxes ?? taxes),
+
+        subtotal,
+        discount,
+        taxes,
         total,
+
         paymentMethod,
         paymentTransactionId:
-          backendOrder.payment_transaction_id ||
-          backendOrder.paymentTransactionId ||
-          (paymentMethod === 'upi'
-            ? `UPI-${Math.floor(1000000000 + Math.random() * 9000000000)}`
-            : paymentMethod === 'wallet'
-            ? `CW-WALLET-${Math.floor(10000 + Math.random() * 90000)}`
-            : `TXN-${Math.floor(100000 + Math.random() * 900000)}`),
-        paymentStatus: 'PAID',
-        status: orderStatus,
-        pickupSlot: backendOrder.pickup_slot || backendOrder.pickupSlot || pickupSlot,
+          backendOrder.paymentTransactionId || undefined,
+        paymentStatus:
+          String(backendOrder.paymentStatus || 'pending').toUpperCase() as any,
+
+        status: frontendStatus,
+
+        pickupSlot,
         pickupCounter,
         estimatedReadyTime,
         estimatedPrepMinutes,
-        createdAt: backendOrder.created_at || backendOrder.createdAt || new Date().toISOString(),
-        updatedAt: backendOrder.updated_at || backendOrder.updatedAt || new Date().toISOString(),
+
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
-      // Deduct stock in menu and inventory locally
-      cart.forEach((c) => {
-        setMenuItems((prev) =>
-          prev.map((m) =>
-            m.id === c.menuItem.id
-              ? {
-                  ...m,
-                  stockQuantity: Math.max(0, m.stockQuantity - c.quantity),
-                  inStock: m.stockQuantity - c.quantity > 0,
-                }
-              : m
-          )
-        );
-      });
+      if (data.walletBalance !== null && data.walletBalance !== undefined) {
+        setCurrentUserState((prev) => ({
+          ...prev,
+          walletBalance: Number(data.walletBalance),
+        }));
+      }
 
-      // 7. Add order to existing orders state, clear cart, sound & notification
       setOrders((prev) => [newOrder, ...prev]);
+
+      setMenuItems((prev) =>
+        prev.map((menuItem) => {
+          const cartItem = cart.find(
+            (item) => item.menuItem.id === menuItem.id
+          );
+
+          if (!cartItem) return menuItem;
+
+          const newStock = Math.max(
+            0,
+            menuItem.stockQuantity - cartItem.quantity
+          );
+
+          return {
+            ...menuItem,
+            stockQuantity: newStock,
+            inStock: newStock > 0,
+          };
+        })
+      );
+
       clearCart();
 
-      // Play chime sound
       playOrderPlacedSound();
 
       addNotification({
-        title: `Order Placed: Token ${tokenNumber || orderId} 🎉`,
-        message: `Your order #${orderId} is confirmed at ${selectedCanteen.name}. Estimated Ready: ${estimatedReadyTime}`,
-        tokenNumber,
+        title: `Order Placed: Token ${backendOrder.tokenNumber} ðŸŽ‰`,
+        message: `Your order #${backendOrder.id} is confirmed at ${selectedCanteen.name}. Estimated Ready: ${estimatedReadyTime}`,
+        tokenNumber: backendOrder.tokenNumber,
         type: 'order_confirmed',
       });
 
       return newOrder;
-    } catch (err: unknown) {
-      const errorMsg =
-        err instanceof Error ? err.message : 'Failed to place order. Please try again.';
-      throw new Error(errorMsg);
+    } catch (error) {
+      console.error('Place order error:', error);
+
+      if (error instanceof Error) {
+        throw error;
+      }
+
+      throw new Error('Unable to place order');
     }
   };
 
@@ -580,7 +910,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     addNotification({
       title: `Order #${order.id} Cancelled`,
-      message: `Your order #${order.id} (Token ${order.tokenNumber}) has been cancelled. Payment of ₹${order.total} is refunded.`,
+      message: `Your order #${order.id} (Token ${order.tokenNumber}) has been cancelled. Payment of â‚¹${order.total} is refunded.`,
       tokenNumber: order.tokenNumber,
       type: 'cancelled',
     });
@@ -588,53 +918,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  const updateOrderStatus = (orderId: string, newStatus: OrderStatus) => {
-    setOrders((prev) =>
-      prev.map((o) => {
-        if (o.id === orderId) {
-          return {
-            ...o,
-            status: newStatus,
-            updatedAt: new Date().toISOString(),
-          };
-        }
-        return o;
-      })
-    );
+  const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+    const backendStatusMap: Record<string, string> = {
+      CONFIRMED: "placed",
+      ACCEPTED: "accepted",
+      PREPARING: "preparing",
+      READY: "ready",
+      COLLECTED: "completed",
+      CANCELLED: "cancelled",
+    };
 
-    const order = orders.find((o) => o.id === orderId);
-    if (!order) return;
+    const backendStatus = backendStatusMap[newStatus];
 
-    if (newStatus === 'PREPARING') {
-      addNotification({
-        title: `Kitchen Preparing: Token ${order.tokenNumber} 👨‍🍳`,
-        message: `Your food is now on the stove/counter at ${order.canteenName}.`,
-        tokenNumber: order.tokenNumber,
-        type: 'preparing',
+    if (!backendStatus) {
+      console.error("Invalid order status:", newStatus);
+      return;
+    }
+
+    try {
+      const data = await apiRequest(`/kitchen/orders/${orderId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          status: backendStatus,
+        }),
       });
-    } else if (newStatus === 'READY') {
-      playOrderReadyChime();
-      addNotification({
-        title: `🎉 Order Ready for Pickup! Token ${order.tokenNumber}`,
-        message: `Your order is hot & ready! Please collect at ${order.pickupCounter}.`,
-        tokenNumber: order.tokenNumber,
-        type: 'ready',
-      });
-      // Update canteen's current serving token
-      setCanteens((prev) =>
-        prev.map((c) =>
-          c.id === order.canteenId
-            ? { ...c, currentServingToken: order.tokenNumber }
-            : c
-        )
+
+      if (!data.success) {
+        alert(data.message || "Failed to update order status");
+        return;
+      }
+
+      setOrders((prev) =>
+        prev.map((o) => {
+          if (o.id === orderId) {
+            return {
+              ...o,
+              status: newStatus,
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return o;
+        })
       );
-    } else if (newStatus === 'COLLECTED') {
-      addNotification({
-        title: `Order Collected: Token ${order.tokenNumber} ✅`,
-        message: `Enjoy your meal! How was your experience? Leave quick feedback.`,
-        tokenNumber: order.tokenNumber,
-        type: 'collected',
-      });
+
+      const order = orders.find((o) => o.id === orderId);
+      if (!order) return;
+
+      if (newStatus === "PREPARING") {
+        addNotification({
+          title: `Kitchen Preparing: Token ${order.tokenNumber} 👨‍🍳`,
+          message: `Your food is now being prepared at ${order.canteenName}.`,
+          tokenNumber: order.tokenNumber,
+        });
+      } else if (newStatus === "READY") {
+        addNotification({
+          title: `Order Ready: Token ${order.tokenNumber} 🔔`,
+          message: `Your order is ready for pickup at ${order.canteenName}.`,
+          tokenNumber: order.tokenNumber,
+        });
+      } else if (newStatus === "COLLECTED") {
+        addNotification({
+          title: `Order Collected: Token ${order.tokenNumber} ✅`,
+          message: `Order ${order.tokenNumber} has been collected.`,
+          tokenNumber: order.tokenNumber,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to update order status:", error);
+      alert("Unable to update order status. Please try again.");
     }
   };
 
@@ -646,7 +997,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     announceTokenVoice(order.tokenNumber, order.pickupCounter);
 
     addNotification({
-      title: `🔊 Calling Token ${order.tokenNumber}`,
+      title: `ðŸ”Š Calling Token ${order.tokenNumber}`,
       message: `Announcement made for ${order.pickupCounter}!`,
       tokenNumber: order.tokenNumber,
       type: 'reminder',
@@ -681,7 +1032,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map((o) => (o.id === orderId ? { ...o, feedback } : o))
     );
     addNotification({
-      title: 'Thank you for your rating! ⭐',
+      title: 'Thank you for your rating! â­',
       message: 'Your feedback helps improve canteen quality and prep speed.',
       type: 'info',
     });
@@ -699,7 +1050,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     if (addedCount > 0) {
       addNotification({
-        title: 'Items Added to Cart! 🛒',
+        title: 'Items Added to Cart! ðŸ›’',
         message: `Reordered ${addedCount} items from Order #${pastOrder.id}. Review and choose pickup slot.`,
         type: 'info',
       });
@@ -714,8 +1065,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       walletBalance: prev.walletBalance + amount,
     }));
     addNotification({
-      title: `Wallet Credited: +₹${amount}`,
-      message: `Your Campus Wallet balance is now ₹${currentUser.walletBalance + amount}.`,
+      title: `Wallet Credited: +â‚¹${amount}`,
+      message: `Your Campus Wallet balance is now â‚¹${currentUser.walletBalance + amount}.`,
       type: 'info',
     });
   };
@@ -759,7 +1110,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
     addNotification({
-      title: 'Inventory Restocked 📦',
+      title: 'Inventory Restocked ðŸ“¦',
       message: `Added +${addAmount} units to stock.`,
       type: 'info',
     });
@@ -836,9 +1187,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setRole,
         currentUser,
         setCurrentUser,
-        availableUsers,
         loginUser,
         logoutUser,
+        availableUsers,
         selectedCanteen,
         canteens,
         selectCanteen,
@@ -889,3 +1240,10 @@ export const useApp = () => {
   }
   return context;
 };
+
+
+
+
+
+
+

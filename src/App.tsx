@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
+import LoginPage from './pages/LoginPage';
 import { Header } from './components/Header';
 import { StudentPage, KitchenPage, CounterPage, AdminPage } from './pages';
-import { LoginPage } from './pages/LoginPage';
 import { CartModal } from './components/student/CartModal';
 import { OrderTrackingModal } from './components/student/OrderTrackingModal';
 import { OrderHistoryModal } from './components/student/OrderHistoryModal';
@@ -159,38 +159,22 @@ const MainAppContent: React.FC = () => {
   );
 };
 
-const AppContent: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return typeof window !== 'undefined' && Boolean(localStorage.getItem('token'));
-  });
-
-  useEffect(() => {
+export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = React.useState(
+    !!localStorage.getItem("token")
+  );
+  React.useEffect(() => {
     const checkAuth = () => {
-      const hasToken = typeof window !== 'undefined' && Boolean(localStorage.getItem('token'));
-      setIsAuthenticated(hasToken);
+      setIsAuthenticated(!!localStorage.getItem("token"));
     };
-
-    window.addEventListener('storage', checkAuth);
-    // Poll to catch in-tab changes (e.g. when logoutUser removes token)
-    const interval = setInterval(checkAuth, 400);
-
+    window.addEventListener("storage", checkAuth);
     return () => {
-      window.removeEventListener('storage', checkAuth);
-      clearInterval(interval);
+      window.removeEventListener("storage", checkAuth);
     };
   }, []);
-
-  if (!isAuthenticated) {
-    return <LoginPage onLoginSuccess={() => setIsAuthenticated(true)} />;
-  }
-
-  return <MainAppContent />;
-};
-
-export default function App() {
   return (
     <AppProvider>
-      <AppContent />
+      {isAuthenticated ? <MainAppContent /> : <LoginPage />}
     </AppProvider>
   );
 }

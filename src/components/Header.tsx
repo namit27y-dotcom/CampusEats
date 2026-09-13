@@ -97,10 +97,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
 
       {/* Main Bar */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
-        <div className="flex items-center justify-between h-16 gap-2 sm:gap-4 min-w-0">
+        <div className="flex items-center justify-between min-h-16 gap-2 sm:gap-4 w-full">
           
           {/* Logo & Tagline */}
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0">
             <div className="flex items-center gap-2 shrink-0">
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
                 <UtensilsCrossed className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -121,10 +121,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
             </div>
 
             {/* Canteen Switcher Button */}
-            <div className="relative ml-1 sm:ml-2 shrink min-w-0">
+            <div className="relative ml-1 sm:ml-2 shrink-0">
               <button
                 onClick={() => setShowCanteenDropdown(!showCanteenDropdown)}
-                className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold bg-zinc-100 hover:bg-zinc-200/80 text-zinc-800 border border-zinc-200/80 transition max-w-[110px] sm:max-w-[160px] md:max-w-none"
+                className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold bg-zinc-100 hover:bg-zinc-200/80 text-zinc-800 border border-zinc-200/80 transition max-w-[140px] sm:max-w-[180px]"
                 title="Switch Canteen Location"
               >
                 <MapPin className="w-3.5 h-3.5 text-orange-500 shrink-0" />
@@ -200,7 +200,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
           </div>
 
           {/* Right Action Icons */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 min-w-0">
             {/* Active Order Live Banner if exists */}
             {activeOrder && (
               <button
@@ -386,7 +386,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
       </div>
 
       {/* Responsive Role Navigation Sub-Bar for Mobile / Tablet (< xl) */}
-      <div className="xl:hidden bg-zinc-100/90 border-t border-zinc-200/80 px-2 sm:px-4 py-1.5 w-full">
+      <div className="xl:hidden bg-zinc-100/90 border-t border-zinc-200/80 px-2 sm:px-4 py-1.5 w-full overflow-hidden">
         <div className="max-w-7xl mx-auto flex items-center justify-start sm:justify-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar">
           {rolesList.map(({ role, label, icon: Icon }) => (
             <button

@@ -1,38 +1,29 @@
-const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env;
-const API_BASE_URL = (env?.VITE_API_URL || 'http://localhost:5000/api').replace(/\/+$/, '');
+const API_URL = import.meta.env.VITE_API_URL;
 
-export async function apiRequest(endpoint: string, options: RequestInit = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+export const apiRequest = async (
+    endpoint: string,
+    options: RequestInit = {}
+) => {
+    const token = localStorage.getItem("token");
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...((options.headers as Record<string, string>) || {}),
-  };
+    const headers = new Headers(options.headers);
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+    headers.set("Content-Type", "application/json");
 
-  // Normalize endpoint to always match /api/...
-  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const apiPath = normalizedEndpoint.startsWith('/api/')
-    ? normalizedEndpoint
-    : `/api${normalizedEndpoint}`;
+    if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+    }
 
-  const baseOrigin = API_BASE_URL.replace(/\/api$/, '');
-  const url = `${baseOrigin}${apiPath}`;
+    const response = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        headers
+    });
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+    const data = await response.json();
 
-  const data = await response.json().catch(() => null);
+    if (!response.ok) {
+        throw new Error(data.message || "Something went wrong");
+    }
 
-  if (!response.ok) {
-    const errorMsg = data?.message || `Request failed with status ${response.status}: ${response.statusText}`;
-    throw new Error(errorMsg);
-  }
-
-  return data;
-}
+    return data;
+};
