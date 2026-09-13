@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { MenuItem, FoodCategory } from '../../types';
+import { getFoodImage, handleImageError } from '../../utils/foodImages';
 import {
   LayoutDashboard,
   TrendingUp,
@@ -379,9 +380,10 @@ export const AdminPanel: React.FC = () => {
                       <td className="p-3.5">
                         <div className="flex items-center gap-3">
                           <img
-                            src={item.image}
+                            src={item.image || getFoodImage(item.name, item.category)}
                             alt={item.name}
                             referrerPolicy="no-referrer"
+                            onError={(e) => handleImageError(e, item.name, item.category)}
                             className="w-10 h-10 rounded-xl object-cover bg-zinc-100 shrink-0"
                           />
                           <div>

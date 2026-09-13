@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { MenuItem, FoodCategory } from '../../types';
 import { AiAssistantModal } from '../AiAssistantModal';
+import { getFoodImage, handleImageError } from '../../utils/foodImages';
 import {
   Search,
   SlidersHorizontal,
@@ -381,9 +382,10 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                   {/* Top image & tag */}
                   <div className="relative h-36 rounded-xl overflow-hidden mb-3 bg-zinc-100">
                     <img
-                      src={item.image}
+                      src={item.image || getFoodImage(item.name, item.category)}
                       alt={item.name}
                       referrerPolicy="no-referrer"
+                      onError={(e) => handleImageError(e, item.name, item.category)}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />
                     <div className="absolute top-2 left-2 flex items-center gap-1">
@@ -592,9 +594,10 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                   <div className="w-24 sm:w-32 flex flex-col items-center justify-between shrink-0">
                     <div className="relative w-full h-20 sm:h-24 rounded-xl overflow-hidden bg-zinc-100 mb-2">
                       <img
-                        src={item.image}
+                        src={item.image || getFoodImage(item.name, item.category)}
                         alt={item.name}
                         referrerPolicy="no-referrer"
+                        onError={(e) => handleImageError(e, item.name, item.category)}
                         className="w-full h-full object-cover"
                       />
                       <button

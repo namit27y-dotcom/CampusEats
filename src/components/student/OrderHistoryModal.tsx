@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Order, OrderFeedback } from '../../types';
+import { getFoodImage, handleImageError } from '../../utils/foodImages';
 import {
   X,
   History,
@@ -253,9 +254,10 @@ export const OrderHistoryModal: React.FC<OrderHistoryModalProps> = ({
                   >
                     <div className="flex items-center gap-3">
                       <img
-                        src={item.image}
+                        src={item.image || getFoodImage(item.name, item.category)}
                         alt={item.name}
                         referrerPolicy="no-referrer"
+                        onError={(e) => handleImageError(e, item.name, item.category)}
                         className="w-12 h-12 rounded-xl object-cover bg-zinc-100"
                       />
                       <div>

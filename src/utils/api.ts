@@ -1,16 +1,23 @@
 const rawApiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+
 const defaultBaseUrl = (rawApiUrl && rawApiUrl !== 'undefined')
   ? rawApiUrl.replace(/\/+$/, '')
-  : '/api';
+  : (isProduction ? '' : '/api');
 
-const candidateUrls: string[] = Array.from(new Set([
-  defaultBaseUrl,
-  '/api',
-  'http://127.0.0.1:5000/api',
-  'http://localhost:5000/api',
-]));
+const candidateUrls: string[] = Array.from(
+  new Set(
+    [
+      defaultBaseUrl,
+      rawApiUrl && rawApiUrl !== 'undefined' ? rawApiUrl.replace(/\/+$/, '') : '',
+      !isProduction ? '/api' : '',
+      'http://127.0.0.1:5000/api',
+      'http://localhost:5000/api',
+    ].filter(Boolean) as string[]
+  )
+);
 
-let activeBaseUrl = candidateUrls[0];
+let activeBaseUrl = candidateUrls[0] || '/api';
 
 export const getApiBaseUrl = () => activeBaseUrl;
 
@@ -32,10 +39,10 @@ export const apiRequest = async (
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 
   // Prioritize activeBaseUrl, followed by other candidate URLs if network fails
-  const urlsToTry = [
+  const urlsToTry = Array.from(new Set([
     activeBaseUrl,
-    ...candidateUrls.filter((u) => u !== activeBaseUrl),
-  ];
+    ...candidateUrls,
+  ])).filter(Boolean);
 
   let response: Response | null = null;
   let lastNetworkError: any = null;
@@ -43,11 +50,23 @@ export const apiRequest = async (
   for (const baseUrl of urlsToTry) {
     const fullUrl = `${baseUrl}${cleanEndpoint}`;
     try {
-      response = await fetch(fullUrl, {
+      const res = await fetch(fullUrl, {
         ...options,
         headers,
       });
-      // If we got any HTTP response (even 4xx/5xx), the server was reached successfully
+
+      // If static hosting (Vercel/Netlify SPA) returns 405 Method Not Allowed for POST/PUT on static route
+      if (res.status === 405) {
+        continue;
+      }
+
+      // If static hosting returns HTML page (index.html SPA fallback) instead of JSON API response
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('text/html')) {
+        continue;
+      }
+
+      response = res;
       activeBaseUrl = baseUrl;
       lastNetworkError = null;
       break;
@@ -59,7 +78,7 @@ export const apiRequest = async (
 
   if (!response) {
     throw new Error(
-      `Unable to reach backend server. Please verify the backend is running on port 5000 (${lastNetworkError?.message || 'Network request failed'}).`
+      `Unable to reach backend server. ${lastNetworkError?.message || 'Please check backend server connection.'}`
     );
   }
 
@@ -83,3 +102,4 @@ export const apiRequest = async (
 
   return data;
 };
+
