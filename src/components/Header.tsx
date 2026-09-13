@@ -98,18 +98,18 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
       </div>
 
       {/* Main Bar */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
-        <div className="flex items-center justify-between min-h-16 gap-2 sm:gap-4 w-full">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 w-full">
+        <div className="flex items-center justify-between min-h-14 sm:min-h-16 gap-1.5 sm:gap-4 w-full">
           
           {/* Logo & Tagline */}
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0">
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1 sm:flex-initial">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
                 <UtensilsCrossed className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-heading font-extrabold text-lg sm:text-xl tracking-tight text-zinc-900 leading-none">
+                  <span className="font-heading font-extrabold text-base sm:text-xl tracking-tight text-zinc-900 leading-none">
                     Campus<span className="text-orange-500">Eats</span>
                   </span>
                   <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200 hidden sm:inline-block">
@@ -123,15 +123,15 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
             </div>
 
             {/* Canteen Switcher Button */}
-            <div className="relative ml-1 sm:ml-2 shrink-0">
+            <div className="relative shrink min-w-0">
               <button
                 onClick={() => setShowCanteenDropdown(!showCanteenDropdown)}
-                className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold bg-zinc-100 hover:bg-zinc-200/80 text-zinc-800 border border-zinc-200/80 transition max-w-[140px] sm:max-w-[180px]"
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold bg-zinc-100 hover:bg-zinc-200/80 text-zinc-800 border border-zinc-200/80 transition max-w-[90px] xs:max-w-[125px] sm:max-w-[180px] min-w-0"
                 title="Switch Canteen Location"
               >
-                <MapPin className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-orange-500 shrink-0" />
                 <span className="truncate">{selectedCanteen.name}</span>
-                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0 hidden xs:inline-block"></span>
                 <ChevronDown className="w-3 h-3 text-zinc-500 shrink-0" />
               </button>
 
@@ -202,7 +202,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
           </div>
 
           {/* Right Action Icons */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 min-w-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Active Order Live Banner if exists */}
             {activeOrder && (
               <button
@@ -222,20 +222,21 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
             {/* Campus Wallet */}
             <button
               onClick={() => setShowWalletModal(true)}
-              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition shrink-0"
+              className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition shrink-0"
               title="Campus Wallet Balance"
             >
               <Wallet className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span className="hidden sm:inline font-medium">Wallet:</span>
-              <span className="font-bold">₹{currentUser.walletBalance}</span>
+              <span className="hidden md:inline font-medium">Wallet:</span>
+              <span className="font-bold font-mono">₹{currentUser.walletBalance}</span>
             </button>
 
             {/* Notifications Bell */}
             <div className="relative shrink-0">
               <button
                 onClick={() => setShowNotifDropdown(!showNotifDropdown)}
-                className="p-1.5 sm:p-2 rounded-xl text-zinc-600 hover:bg-zinc-100 transition relative"
+                className="p-1.5 sm:p-2 rounded-xl text-zinc-600 hover:bg-zinc-100 transition relative flex items-center justify-center shrink-0"
                 title="Notifications"
+                aria-label="Notifications"
               >
                 <Bell className="w-4 h-4" />
                 {unreadNotifs.length > 0 && (

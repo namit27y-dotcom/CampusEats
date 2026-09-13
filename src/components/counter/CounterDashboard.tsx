@@ -125,7 +125,7 @@ export const CounterDashboard: React.FC = () => {
             className="flex flex-col sm:flex-row items-center gap-2 max-w-2xl"
           >
             <div className="relative flex-1 w-full">
-              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -tranzinc-y-1/2" />
+              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Enter or scan Student Token (e.g., A135, CE10482)..."

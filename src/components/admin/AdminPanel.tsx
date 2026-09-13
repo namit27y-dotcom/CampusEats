@@ -341,7 +341,7 @@ export const AdminPanel: React.FC = () => {
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-4 rounded-3xl border border-zinc-100 shadow-2xs">
             <div className="relative flex-1 w-full max-w-md">
-              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -tranzinc-y-1/2" />
+              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search menu items to edit price, prep time, or toggle stock..."
