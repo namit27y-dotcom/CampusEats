@@ -1,15 +1,20 @@
 # 🍽️ CampusEats — Smart Canteen Pre-Order & Digital Token System
 
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react\&logoColor=black)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript\&logoColor=white)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-6.4-646CFF?logo=vite\&logoColor=white)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss\&logoColor=white)](https://tailwindcss.com/)
-[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js\&logoColor=white)](https://nodejs.org/)
-[![Express.js](https://img.shields.io/badge/Express.js-4.x-000000?logo=express\&logoColor=white)](https://expressjs.com/)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql\&logoColor=white)](https://www.mysql.com/)
-[![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-010101?logo=socket.io\&logoColor=white)](https://socket.io/)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Vercel-black?logo=vercel&logoColor=white)](https://campus-eats-ruby.vercel.app/)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?logo=github&logoColor=white)](https://github.com/namit27y-dotcom/CampusEats)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-6.4-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Express.js](https://img.shields.io/badge/Express.js-5.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-010101?logo=socket.io&logoColor=white)](https://socket.io/)
 
 > **CampusEats** is a full-stack smart canteen management platform that replaces traditional cafeteria queues with digital pre-orders, digital tokens, online payment tracking, real-time kitchen updates, and organized pickup.
+>
+> 🌐 **Live Application:** [campus-eats-ruby.vercel.app](https://campus-eats-ruby.vercel.app/)  
+> 📁 **GitHub Repository:** [github.com/namit27y-dotcom/CampusEats](https://github.com/namit27y-dotcom/CampusEats)
 
 ---
 
@@ -1002,5 +1007,6 @@ If the repository includes an MIT license file, the project is available under t
 
 Built to make campus food ordering **faster, smarter, and more organized.**
 
-**GitHub:**
-https://github.com/namit27y-dotcom/CampusEats
+* 🌐 **Live Demo:** https://campus-eats-ruby.vercel.app/
+* 📁 **GitHub:** https://github.com/namit27y-dotcom/CampusEats
+

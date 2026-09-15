@@ -21,7 +21,7 @@ import {
   INITIAL_INVENTORY,
 } from '../data/mockData';
 import { playOrderPlacedSound, playOrderReadyChime, announceTokenVoice } from '../utils/soundEffects';
-import { apiRequest } from '../utils/api';
+import { apiRequest, getApiBaseUrl } from '../utils/api';
 import { getFoodImage, DEFAULT_FOOD_IMAGES } from '../utils/foodImages';
 import { io } from 'socket.io-client';
 
@@ -67,7 +67,7 @@ interface AppContextType {
   cancelOrder: (orderId: string) => boolean;
   updateOrderStatus: (orderId: string, newStatus: OrderStatus) => void;
   callToken: (orderId: string) => void;
-  verifyAndCollectOrder: (tokenOrId: string) => { success: boolean; message: string; order?: Order };
+  verifyAndCollectOrder: (tokenOrId: string) => Promise<{ success: boolean; message: string; order?: Order }>;
   submitOrderFeedback: (orderId: string, feedback: OrderFeedback) => void;
   oneClickReorder: (order: Order) => void;
 
@@ -531,13 +531,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (!token || !currentUser?.id) return;
 
-    const socketUrl = (import.meta.env.VITE_WS_URL as string | undefined)?.trim();
-    if (!socketUrl) {
-      // In standalone dev mode, WebSocket is not required
-      return;
-    }
+    const wsEnvUrl = (import.meta.env.VITE_WS_URL as string | undefined)?.trim();
+    const apiBase = getApiBaseUrl();
+    const socketBase = wsEnvUrl || (apiBase.startsWith("http")
+      ? apiBase.replace(/\/api\/?$/, "")
+      : (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1")
+      ? window.location.origin
+      : "http://localhost:5000");
 
-    const socket = io(socketUrl, {
+    const socket = io(socketBase, {
       transports: ["websocket", "polling"],
       reconnectionAttempts: 2,
       timeout: 3000,
@@ -1379,7 +1381,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Counter staff verifies QR or Token
-  const verifyAndCollectOrder = (tokenOrId: string) => {
+  const verifyAndCollectOrder = async (
+    tokenOrId: string
+  ): Promise<{ success: boolean; message: string; order?: Order }> => {
     const cleanQuery = tokenOrId.trim().toUpperCase();
     const order = orders.find(
       (o) =>
@@ -1389,16 +1393,65 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
 
     if (!order) {
-      return { success: false, message: `Token or Order "${tokenOrId}" not found in current canteen queue.` };
+      return {
+        success: false,
+        message: `Token or Order "${tokenOrId}" not found in current canteen queue.`,
+      };
     }
 
     if (order.status === 'COLLECTED') {
-      return { success: false, message: `Token ${order.tokenNumber} has already been collected!`, order };
+      return {
+        success: false,
+        message: `Token ${order.tokenNumber} has already been collected!`,
+        order,
+      };
     }
 
-    // Mark as collected
-    updateOrderStatus(order.id, 'COLLECTED');
-    return { success: true, message: `Success! Token ${order.tokenNumber} verified & food collected.`, order };
+    try {
+      // Call dedicated counter collection endpoint only
+      const data = await apiRequest(`/counter/orders/${order.id}/collect`, {
+        method: "PATCH",
+      });
+
+      if (!data.success && data.message) {
+        return { success: false, message: data.message, order };
+      }
+    } catch (err: any) {
+      console.warn("Counter API collection fallback:", err?.message || err);
+    }
+
+    // Update local state to COLLECTED
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id === order.id) {
+          return {
+            ...o,
+            status: 'COLLECTED' as OrderStatus,
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        return o;
+      })
+    );
+
+    addNotification({
+      title: `Order Collected: Token ${order.tokenNumber} ✅`,
+      message: `Order ${order.tokenNumber} has been verified and collected at ${order.canteenName}.`,
+      tokenNumber: order.tokenNumber,
+      type: 'info',
+    });
+
+    const updatedOrder: Order = {
+      ...order,
+      status: 'COLLECTED',
+      updatedAt: new Date().toISOString(),
+    };
+
+    return {
+      success: true,
+      message: `Success! Token ${order.tokenNumber} verified & food collected.`,
+      order: updatedOrder,
+    };
   };
 
   const submitOrderFeedback = (orderId: string, feedback: OrderFeedback) => {

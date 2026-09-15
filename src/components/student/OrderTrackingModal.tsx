@@ -31,7 +31,7 @@ export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
   onClose,
   onOpenFeedback,
 }) => {
-  const { cancelOrder, updateOrderStatus } = useApp();
+  const { cancelOrder, verifyAndCollectOrder } = useApp();
   const [copiedToken, setCopiedToken] = useState(false);
 
   if (!isOpen || !order) return null;
@@ -127,7 +127,7 @@ export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
               {/* Demo Action: Quick Collect for testing */}
               <div className="mt-4 pt-3 border-t border-white/20 flex justify-center">
                 <button
-                  onClick={() => updateOrderStatus(order.id, 'COLLECTED')}
+                  onClick={() => verifyAndCollectOrder(order.tokenNumber)}
                   className="px-4 py-1.5 rounded-xl bg-white text-emerald-800 text-xs font-extrabold hover:bg-emerald-50 shadow-sm transition cursor-pointer"
                 >
                   Simulate Food Collected ✓

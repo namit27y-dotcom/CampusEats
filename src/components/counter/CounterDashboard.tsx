@@ -21,7 +21,6 @@ export const CounterDashboard: React.FC = () => {
     orders,
     selectedCanteen,
     callToken,
-    updateOrderStatus,
     verifyAndCollectOrder,
   } = useApp();
 
@@ -47,11 +46,11 @@ export const CounterDashboard: React.FC = () => {
     .filter((o) => o.canteenId === selectedCanteen.id && o.status === 'COLLECTED')
     .slice(0, 6);
 
-  const handleManualVerify = (e: React.FormEvent) => {
+  const handleManualVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchToken.trim()) return;
 
-    const result = verifyAndCollectOrder(searchToken.trim());
+    const result = await verifyAndCollectOrder(searchToken.trim());
     setVerificationResult(result);
     if (result.success) {
       setSearchToken('');
@@ -63,14 +62,16 @@ export const CounterDashboard: React.FC = () => {
     }
   };
 
-  const handleSimulateQrScan = (ord: Order) => {
-    const result = verifyAndCollectOrder(ord.tokenNumber);
+  const handleSimulateQrScan = async (ord: Order) => {
+    const result = await verifyAndCollectOrder(ord.tokenNumber);
     setVerificationResult(result);
     setShowQrSimModal(false);
-    try {
-      confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
-    } catch {
-      // ignore
+    if (result.success) {
+      try {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+      } catch {
+        // ignore
+      }
     }
   };
 
@@ -252,7 +253,17 @@ export const CounterDashboard: React.FC = () => {
                     </button>
 
                     <button
-                      onClick={() => updateOrderStatus(ord.id, 'COLLECTED')}
+                      onClick={async () => {
+                        const res = await verifyAndCollectOrder(ord.tokenNumber);
+                        setVerificationResult(res);
+                        if (res.success) {
+                          try {
+                            confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+                          } catch {
+                            // ignore
+                          }
+                        }
+                      }}
                       className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <CheckCircle2 className="w-4 h-4" />
