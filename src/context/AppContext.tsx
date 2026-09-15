@@ -402,7 +402,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           `Loaded ${data.orders.length} real orders from backend`
         );
       } catch (error) {
-        console.error("Failed to load real orders:", error);
+        console.warn("Real orders sync note (using local cache):", error);
       }
     };
 
@@ -432,7 +432,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const data = await apiRequest(endpoint);
 
         if (!data.success || !Array.isArray(data.orders)) {
-          console.error("Invalid kitchen orders response:", data);
+          console.warn("Unexpected staff orders response:", data);
           return;
         }
 
@@ -516,7 +516,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           `Loaded ${data.orders.length} real kitchen orders from backend`
         );
       } catch (error) {
-        console.error("Failed to load kitchen orders:", error);
+        console.warn("Staff orders sync note (using local cache):", error);
       }
     };
 
@@ -531,11 +531,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (!token || !currentUser?.id) return;
 
-    const socket = io("http://localhost:5000", {
-      transports: ["websocket"],
+    const socketUrl = (import.meta.env.VITE_WS_URL as string | undefined)?.trim();
+    if (!socketUrl) {
+      // In standalone dev mode, WebSocket is not required
+      return;
+    }
+
+    const socket = io(socketUrl, {
+      transports: ["websocket", "polling"],
+      reconnectionAttempts: 2,
+      timeout: 3000,
     });
 
     socketRef.current = socket;
+
+    socket.on("connect_error", () => {
+      // Gracefully silent connection errors
+    });
 
     socket.on("connect", () => {
       console.log("CampusEats Socket.IO connected");
@@ -1086,7 +1098,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         paymentTransactionId:
           backendOrder.paymentTransactionId || undefined,
         paymentStatus:
-          String(backendOrder.paymentStatus || 'pending').toUpperCase() as any,
+          String(backendOrder.paymentStatus || 'paid').toLowerCase() === 'pending'
+            ? 'PENDING'
+            : 'PAID',
 
         status: frontendStatus,
 
@@ -1193,7 +1207,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         total,
         paymentMethod,
         paymentTransactionId: `TXN-LOCAL-${Date.now().toString().slice(-6)}`,
-        paymentStatus: paymentMethod === 'cash' ? 'PENDING' : 'COMPLETED',
+        paymentStatus: paymentMethod === 'cash' ? 'PENDING' : 'PAID',
         status: 'CONFIRMED',
         pickupSlot,
         pickupCounter,

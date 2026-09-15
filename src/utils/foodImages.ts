@@ -1,3 +1,5 @@
+import type React from 'react';
+
 export const DEFAULT_FOOD_IMAGES = {
   coldCoffee: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=600&q=80',
   tea: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=600&q=80',

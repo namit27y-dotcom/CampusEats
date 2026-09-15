@@ -1,23 +1,19 @@
 const rawApiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
-const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
 
 const defaultBaseUrl = (rawApiUrl && rawApiUrl !== 'undefined')
   ? rawApiUrl.replace(/\/+$/, '')
-  : (isProduction ? '' : '/api');
+  : '/api';
 
 const candidateUrls: string[] = Array.from(
   new Set(
     [
       defaultBaseUrl,
-      rawApiUrl && rawApiUrl !== 'undefined' ? rawApiUrl.replace(/\/+$/, '') : '',
-      !isProduction ? '/api' : '',
-      'http://127.0.0.1:5000/api',
-      'http://localhost:5000/api',
+      '/api',
     ].filter(Boolean) as string[]
   )
 );
 
-let activeBaseUrl = candidateUrls[0] || '/api';
+let activeBaseUrl = defaultBaseUrl;
 
 export const getApiBaseUrl = () => activeBaseUrl;
 
@@ -36,7 +32,8 @@ export const apiRequest = async (
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  // Ensure leading slash
+  let cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 
   // Prioritize activeBaseUrl, followed by other candidate URLs if network fails
   const urlsToTry = Array.from(new Set([
@@ -48,7 +45,13 @@ export const apiRequest = async (
   let lastNetworkError: any = null;
 
   for (const baseUrl of urlsToTry) {
-    const fullUrl = `${baseUrl}${cleanEndpoint}`;
+    // If endpoint already starts with /api and baseUrl is /api, avoid /api/api
+    let fullUrl = '';
+    if (baseUrl === '/api' && cleanEndpoint.startsWith('/api/')) {
+      fullUrl = cleanEndpoint;
+    } else {
+      fullUrl = `${baseUrl}${cleanEndpoint}`;
+    }
     try {
       const res = await fetch(fullUrl, {
         ...options,
