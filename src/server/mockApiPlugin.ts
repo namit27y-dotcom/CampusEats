@@ -49,7 +49,7 @@ const ordersDb: StoredOrder[] = [
   {
     id: 1001,
     user_id: 1,
-    student_name: 'Rahul Sharma',
+    student_name: 'Namit',
     canteen_id: 1,
     canteen_name: 'Main Campus Canteen',
     total_amount: 115,
@@ -67,7 +67,7 @@ const ordersDb: StoredOrder[] = [
   {
     id: 1002,
     user_id: 1,
-    student_name: 'Rahul Sharma',
+    student_name: 'Namit',
     canteen_id: 1,
     canteen_name: 'Main Campus Canteen',
     total_amount: 120,
@@ -219,8 +219,8 @@ export function mockApiPlugin(): Plugin {
             success: true,
             user: {
               id: 1,
-              name: 'Rahul Sharma',
-              email: 'rahul.s@campus.edu',
+              name: 'Namit',
+              email: 'namit@campus.edu',
               role: 'student',
               wallet_balance: userWalletBalance,
             },
@@ -275,7 +275,7 @@ export function mockApiPlugin(): Plugin {
           const newOrder: StoredOrder = {
             id: orderId,
             user_id: 1,
-            student_name: 'Rahul Sharma',
+            student_name: 'Namit',
             canteen_id: Number(canteenId || 1),
             canteen_name: CANTEENS.find((c) => c.id === Number(canteenId))?.name || 'Main Campus Canteen',
             total_amount: totalAmount,

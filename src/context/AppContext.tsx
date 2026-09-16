@@ -122,7 +122,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const saved = localStorage.getItem('campuseats_user_v1');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const u = JSON.parse(saved);
+        if (u && typeof u.name === 'string' && u.name.includes('Rahul')) {
+          u.name = u.name.replace(/Rahul\s*Sharma/g, 'Namit').replace(/Rahul/g, 'Namit');
+          if (u.email) u.email = u.email.replace(/rahul/gi, 'namit');
+          localStorage.setItem('campuseats_user_v1', JSON.stringify(u));
+        }
+        return u;
       } catch (e) {}
     }
     return INITIAL_USERS[0];
@@ -154,7 +160,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Orders
   const [orders, setOrders] = useState<Order[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.ORDERS);
-    return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.map((o: Order) => ({
+            ...o,
+            userName: o.userName ? o.userName.replace(/Rahul\s*Sharma/g, 'Namit').replace(/Rahul/g, 'Namit') : o.userName,
+          }));
+        }
+      } catch (e) {}
+    }
+    return INITIAL_ORDERS;
   });
 
   // Notifications
