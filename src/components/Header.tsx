@@ -42,8 +42,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
     markNotificationRead,
     clearAllNotifications,
     topUpWallet,
-    autoSimulateKitchen,
-    setAutoSimulateKitchen,
   } = useApp();
 
   const [showCanteenDropdown, setShowCanteenDropdown] = useState(false);
@@ -81,19 +79,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
           <span className="text-orange-300 font-medium hidden sm:inline shrink-0">
             ⚡ Break Time Rush Protection Active
           </span>
-        </div>
-
-        {/* Demo Auto-progression toggle */}
-        <div className="flex items-center gap-2 shrink-0">
-          <label className="flex items-center gap-1.5 text-[11px] sm:text-xs text-zinc-300 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={autoSimulateKitchen}
-              onChange={(e) => setAutoSimulateKitchen(e.target.checked)}
-              className="rounded border-zinc-700 text-orange-500 focus:ring-0 w-3.5 h-3.5 accent-orange-500"
-            />
-            <span className="hidden md:inline">Auto-Demo</span>
-          </label>
         </div>
       </div>
 
