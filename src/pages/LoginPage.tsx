@@ -7,46 +7,51 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  Sparkles,
   Loader2,
   AlertCircle,
   User,
   CheckCircle2,
+  Code2,
 } from "lucide-react";
 
-interface TestAccount {
+// Development test accounts are only evaluated and loaded during local development
+// and only when explicitly enabled via VITE_SHOW_TEST_ACCOUNTS=true
+interface DevTestAccount {
   role: string;
   title: string;
   email: string;
   pass: string;
 }
 
-const TEST_ACCOUNTS: TestAccount[] = [
-  {
-    role: "student",
-    title: "Student Account",
-    email: "teststudent@gmail.com",
-    pass: "test123",
-  },
-  {
-    role: "kitchen",
-    title: "Kitchen KDS",
-    email: "kitchen@campuseats.com",
-    pass: "kitchen123",
-  },
-  {
-    role: "counter",
-    title: "Pickup Counter",
-    email: "counter@campuseats.com",
-    pass: "counter123",
-  },
-  {
-    role: "admin",
-    title: "Administrator",
-    email: "admin@campuseats.com",
-    pass: "admin123",
-  },
-];
+// In production builds (import.meta.env.DEV is false), Vite/Rollup tree-shakes this dead branch
+const DEV_TEST_ACCOUNTS: DevTestAccount[] = import.meta.env.DEV
+  ? [
+      {
+        role: "student",
+        title: "Student Account",
+        email: "teststudent@gmail.com",
+        pass: "test123",
+      },
+      {
+        role: "kitchen",
+        title: "Kitchen KDS",
+        email: "kitchen@campuseats.com",
+        pass: "kitchen123",
+      },
+      {
+        role: "counter",
+        title: "Pickup Counter",
+        email: "counter@campuseats.com",
+        pass: "counter123",
+      },
+      {
+        role: "admin",
+        title: "Administrator",
+        email: "admin@campuseats.com",
+        pass: "admin123",
+      },
+    ]
+  : [];
 
 export const LoginPage: React.FC = () => {
   const { loginUser, registerUser } = useApp();
@@ -56,14 +61,17 @@ export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState("student");
   const [activeAccountEmail, setActiveAccountEmail] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const handleSelectAccount = (account: TestAccount) => {
+  // Only show development test accounts in DEV mode when explicitly enabled
+  const showDevTestAccounts =
+    Boolean(import.meta.env.DEV) && import.meta.env.VITE_SHOW_TEST_ACCOUNTS === "true";
+
+  const handleSelectDevAccount = (account: DevTestAccount) => {
     setIsRegisterMode(false);
     setEmail(account.email);
     setPassword(account.pass);
@@ -101,7 +109,7 @@ export const LoginPage: React.FC = () => {
           setLoading(false);
           return;
         }
-        await registerUser(name.trim(), email.trim(), password, selectedRole);
+        await registerUser(name.trim(), email.trim(), password);
         setSuccess("Account created successfully! Redirecting...");
       } else {
         await loginUser(email.trim(), password);
@@ -151,11 +159,11 @@ export const LoginPage: React.FC = () => {
         <div className="w-full bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-200/80 p-6 sm:p-8 backdrop-blur-sm">
           <div className="mb-6">
             <h2 className="text-xl font-bold text-slate-900 font-heading">
-              {isRegisterMode ? "Create your account" : "Sign In to your account"}
+              {isRegisterMode ? "Create your student account" : "Sign In to your account"}
             </h2>
             <p className="text-slate-500 text-xs sm:text-sm mt-1.5 leading-relaxed">
               {isRegisterMode
-                ? "Join CampusEats to skip queues and pre-order food effortlessly."
+                ? "Join CampusEats to pre-order food, skip canteen queues, and track live tokens."
                 : "Enter your registered campus email and password to access the cafeteria menu and wallet."}
             </p>
           </div>
@@ -200,7 +208,7 @@ export const LoginPage: React.FC = () => {
                       setActiveAccountEmail(null);
                     }
                   }}
-                  placeholder="user@email.com"
+                  placeholder="user@campus.edu"
                   autoComplete="email"
                   className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl bg-slate-50/70 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
                 />
@@ -235,31 +243,6 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Role Selector (Register mode only) */}
-            {isRegisterMode && (
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Account Role
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(["student", "kitchen", "counter", "admin"] as const).map((r) => (
-                    <button
-                      type="button"
-                      key={r}
-                      onClick={() => setSelectedRole(r)}
-                      className={`py-2 px-3 text-xs font-semibold rounded-xl border capitalize transition ${
-                        selectedRole === r
-                          ? "bg-orange-50 border-orange-500 text-orange-600 shadow-sm"
-                          : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
-                      }`}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Error state message */}
             {error && (
               <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-600 rounded-xl p-3 text-xs leading-relaxed">
@@ -285,7 +268,7 @@ export const LoginPage: React.FC = () => {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Signing in...</span>
+                  <span>{isRegisterMode ? "Creating Account..." : "Signing in..."}</span>
                 </>
               ) : (
                 <>
@@ -313,48 +296,55 @@ export const LoginPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Quick Test Accounts Section */}
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <Sparkles className="w-3.5 h-3.5 text-orange-500" />
-              <span className="text-[11px] font-bold text-orange-600 uppercase tracking-wider">
-                Quick Test Accounts
-              </span>
-            </div>
+          {/* Development / Test Only Accounts Section (DEV MODE ONLY) */}
+          {showDevTestAccounts && DEV_TEST_ACCOUNTS.length > 0 && (
+            <div className="mt-6 pt-5 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center gap-1.5">
+                  <Code2 className="w-3.5 h-3.5 text-amber-600" />
+                  <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">
+                    Development / Test Only
+                  </span>
+                </div>
+                <span className="text-[10px] font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200">
+                  DEV ONLY
+                </span>
+              </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              {TEST_ACCOUNTS.map((acc) => {
-                const isSelected = activeAccountEmail === acc.email;
-                return (
-                  <button
-                    key={acc.role}
-                    type="button"
-                    onClick={() => handleSelectAccount(acc)}
-                    className={`text-left p-2.5 rounded-xl border transition group cursor-pointer ${
-                      isSelected
-                        ? "border-orange-400 bg-orange-50/70 shadow-sm ring-1 ring-orange-400/30"
-                        : "border-slate-200/80 bg-slate-50/60 hover:bg-orange-50/50 hover:border-orange-300"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`text-xs font-bold transition ${
-                          isSelected
-                            ? "text-orange-600"
-                            : "text-slate-800 group-hover:text-orange-600"
-                        }`}
-                      >
-                        {acc.title}
+              <div className="grid grid-cols-2 gap-2">
+                {DEV_TEST_ACCOUNTS.map((acc) => {
+                  const isSelected = activeAccountEmail === acc.email;
+                  return (
+                    <button
+                      key={acc.role}
+                      type="button"
+                      onClick={() => handleSelectDevAccount(acc)}
+                      className={`text-left p-2.5 rounded-xl border transition group cursor-pointer ${
+                        isSelected
+                          ? "border-amber-400 bg-amber-50/70 shadow-sm ring-1 ring-amber-400/30"
+                          : "border-slate-200/80 bg-slate-50/60 hover:bg-amber-50/50 hover:border-amber-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`text-xs font-bold transition ${
+                            isSelected
+                              ? "text-amber-700"
+                              : "text-slate-800 group-hover:text-amber-700"
+                          }`}
+                        >
+                          {acc.title}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-500 truncate block mt-0.5">
+                        {acc.email}
                       </span>
-                    </div>
-                    <span className="text-[11px] text-slate-500 truncate block mt-0.5">
-                      {acc.email}
-                    </span>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Footer info */}

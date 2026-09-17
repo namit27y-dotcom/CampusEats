@@ -31,7 +31,7 @@ interface AppContextType {
   currentUser: UserProfile;
   setCurrentUser: (user: UserProfile) => void;
   loginUser: (email: string, password: string) => Promise<UserProfile>;
-  registerUser: (name: string, email: string, password: string, role?: string) => Promise<UserProfile>;
+  registerUser: (name: string, email: string, password: string) => Promise<UserProfile>;
   logoutUser: () => void;
   availableUsers: UserProfile[];
   
@@ -862,8 +862,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const registerUser = async (
     name: string,
     email: string,
-    password: string,
-    role: string = "student"
+    password: string
   ): Promise<UserProfile> => {
     try {
       await apiRequest("/auth/register", {
@@ -872,7 +871,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           name,
           email,
           password,
-          role,
         }),
       });
 
@@ -896,7 +894,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           phone: "+91 98765 00000",
           email,
           walletBalance: 300,
-          role: (role as UserRole) || "student",
+          role: "student",
           favoriteItemIds: [],
         };
 
