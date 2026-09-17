@@ -46,18 +46,15 @@ export const AdminPanel: React.FC = () => {
   const [formPrice, setFormPrice] = useState('60');
   const [formCategory, setFormCategory] = useState<FoodCategory>('snacks');
   const [formPrepTime, setFormPrepTime] = useState('8');
-  const [formIsVeg, setFormIsVeg] = useState(true);
-<<<<<<< HEAD
   const [backendStats, setBackendStats] = useState<any>(null);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
-=======
+  const [formIsVeg, setFormIsVeg] = useState(true);
   const [formIsVegan, setFormIsVegan] = useState(false);
   const [formIsGlutenFree, setFormIsGlutenFree] = useState(false);
   const [formIsDairyFree, setFormIsDairyFree] = useState(false);
   const [formIsHighProtein, setFormIsHighProtein] = useState(false);
   const [formStock, setFormStock] = useState('30');
   const [formImage, setFormImage] = useState('');
->>>>>>> origin/main
 
   // Fetch real analytics from backend when mounted
   React.useEffect(() => {
