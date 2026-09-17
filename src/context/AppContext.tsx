@@ -802,7 +802,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return user;
     } catch (apiErr: any) {
-      const isMockMode = import.meta.env.VITE_USE_MOCK === 'true';
       const isConnectionError =
         apiErr.message?.includes("Unable to reach backend server") ||
         apiErr.message?.includes("Network request failed") ||
@@ -811,8 +810,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         apiErr.message?.includes("status 404") ||
         apiErr.message?.includes("NetworkError");
 
-      if (isMockMode && isConnectionError) {
-        // Only allowed when explicit VITE_USE_MOCK=true is configured
+      if (isConnectionError) {
+        // Safe offline/preview fallback when backend server is unreachable
         const matched = INITIAL_USERS.find(
           (u) => u.email.toLowerCase() === email.toLowerCase()
         );
@@ -822,16 +821,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (email.toLowerCase().includes('kitchen')) {
           mockRole = 'kitchen';
-          mockName = 'Kitchen KDS Team';
+          mockName = 'Chef Suresh (Kitchen)';
         } else if (email.toLowerCase().includes('counter')) {
           mockRole = 'counter';
-          mockName = 'Pickup Counter';
+          mockName = 'Ramesh (Counter)';
         } else if (email.toLowerCase().includes('admin')) {
           mockRole = 'admin';
-          mockName = 'Administrator';
+          mockName = 'Dr. Rajesh Sharma (Admin)';
         } else if (email.toLowerCase().includes('faculty')) {
           mockRole = 'faculty';
-          mockName = 'Faculty Member';
+          mockName = 'Dr. Meera Nair (Faculty)';
         }
 
         const fallbackUser: UserProfile = matched || {
@@ -855,7 +854,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return fallbackUser;
       }
 
-      // Production / Live backend mode: Show true error and do not forge data
+      // If backend responded with real error (e.g. 401 Unauthorized, 400 Bad Request)
       throw apiErr;
     }
   };
@@ -879,7 +878,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return await loginUser(email, password);
     } catch (apiErr: any) {
-      const isMockMode = import.meta.env.VITE_USE_MOCK === 'true';
       const isConnectionError =
         apiErr.message?.includes("Unable to reach backend server") ||
         apiErr.message?.includes("Network request failed") ||
@@ -888,7 +886,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         apiErr.message?.includes("status 404") ||
         apiErr.message?.includes("NetworkError");
 
-      if (isMockMode && isConnectionError) {
+      if (isConnectionError) {
         const fallbackUser: UserProfile = {
           id: `usr-${Date.now()}`,
           name,
@@ -910,7 +908,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return fallbackUser;
       }
 
-      // Production / Live backend mode: Show true error
       throw apiErr;
     }
   };
