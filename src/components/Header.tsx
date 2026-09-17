@@ -42,8 +42,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
     markNotificationRead,
     clearAllNotifications,
     topUpWallet,
-    autoSimulateKitchen,
-    setAutoSimulateKitchen,
   } = useApp();
 
   const [showCanteenDropdown, setShowCanteenDropdown] = useState(false);
@@ -82,8 +80,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
             ⚡ Break Time Rush Protection Active
           </span>
         </div>
-
-        {/* Environment Mode Badge & Demo Auto-progression toggle */}
+        {/* Environment Mode Badge */}
         <div className="flex items-center gap-2 shrink-0">
           {import.meta.env.VITE_USE_MOCK === 'true' ? (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">
@@ -94,31 +91,22 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
               ● LIVE BACKEND
             </span>
           )}
-          <label className="flex items-center gap-1.5 text-[11px] sm:text-xs text-zinc-300 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={autoSimulateKitchen}
-              onChange={(e) => setAutoSimulateKitchen(e.target.checked)}
-              className="rounded border-zinc-700 text-orange-500 focus:ring-0 w-3.5 h-3.5 accent-orange-500"
-            />
-            <span className="hidden md:inline">Auto-Demo</span>
-          </label>
         </div>
       </div>
 
       {/* Main Bar */}
-      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 w-full">
-        <div className="flex items-center justify-between min-h-14 sm:min-h-16 gap-1 sm:gap-4 w-full">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 w-full">
+        <div className="flex items-center justify-between min-h-14 sm:min-h-16 gap-1.5 sm:gap-4 w-full">
           
           {/* Logo & Tagline */}
-          <div className="flex items-center gap-1 sm:gap-3 min-w-0 flex-1 sm:flex-initial">
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
-                <UtensilsCrossed className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
+                <UtensilsCrossed className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1">
-                  <span className="font-heading font-extrabold text-sm xs:text-base sm:text-xl tracking-tight text-zinc-900 leading-none">
+              <div className="shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-heading font-extrabold text-base sm:text-xl tracking-tight text-zinc-900 leading-none">
                     Campus<span className="text-orange-500">Eats</span>
                   </span>
                   <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200 hidden sm:inline-block">
@@ -132,16 +120,16 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
             </div>
 
             {/* Canteen Switcher Button */}
-            <div className="relative shrink min-w-0">
+            <div className="relative shrink-0">
               <button
                 onClick={() => setShowCanteenDropdown(!showCanteenDropdown)}
-                className="flex items-center gap-1 sm:gap-2 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold bg-zinc-100 hover:bg-zinc-200/80 text-zinc-800 border border-zinc-200/80 transition max-w-[70px] xs:max-w-[110px] sm:max-w-[180px] min-w-0"
+                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold bg-zinc-100 hover:bg-zinc-200/80 text-zinc-800 border border-zinc-200/80 transition max-w-[120px] sm:max-w-[190px] md:max-w-[220px] cursor-pointer"
                 title="Switch Canteen Location"
               >
                 <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-orange-500 shrink-0" />
                 <span className="truncate">{selectedCanteen.name}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0 hidden xs:inline-block"></span>
-                <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-zinc-500 shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0 hidden sm:inline-block"></span>
+                <ChevronDown className="w-3 h-3 text-zinc-500 shrink-0" />
               </button>
 
               {/* Dropdown */}
@@ -192,26 +180,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
             </div>
           </div>
 
-          {/* Role Switcher Tabs (Desktop xl+) */}
-          <div className="hidden xl:flex items-center p-1 bg-zinc-100 rounded-full border border-zinc-200/80 shrink-0">
-            {rolesList.map(({ role, label, icon: Icon }) => (
-              <button
-                key={role}
-                onClick={() => setRole(role)}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition ${
-                  currentRole === role
-                    ? 'bg-white text-zinc-900 shadow-xs border border-zinc-200/60'
-                    : 'text-zinc-600 hover:text-zinc-900'
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${currentRole === role ? 'text-orange-500' : 'text-zinc-400'}`} />
-                <span>{label}</span>
-              </button>
-            ))}
-          </div>
-
           {/* Right Action Icons */}
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2.5 shrink-0 ml-auto">
             {/* Active Order Live Banner if exists */}
             {activeOrder && (
               <button
@@ -231,10 +201,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
             {/* Campus Wallet */}
             <button
               onClick={() => setShowWalletModal(true)}
-              className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition shrink-0"
+              className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition shrink-0"
               title="Campus Wallet Balance"
             >
-              <Wallet className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600 shrink-0" />
+              <Wallet className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
               <span className="hidden md:inline font-medium">Wallet:</span>
               <span className="font-bold font-mono">₹{currentUser.walletBalance}</span>
             </button>
@@ -243,13 +213,13 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
             <div className="relative shrink-0">
               <button
                 onClick={() => setShowNotifDropdown(!showNotifDropdown)}
-                className="p-1 sm:p-2 rounded-xl text-zinc-600 hover:bg-zinc-100 transition relative flex items-center justify-center shrink-0"
+                className="p-1.5 sm:p-2 rounded-xl text-zinc-600 hover:bg-zinc-100 transition relative flex items-center justify-center shrink-0"
                 title="Notifications"
                 aria-label="Notifications"
               >
-                <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Bell className="w-4 h-4" />
                 {unreadNotifs.length > 0 && (
-                  <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
                 )}
               </button>
 
@@ -411,25 +381,40 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
         </div>
       </div>
 
-      {/* Responsive Role Navigation Sub-Bar for Mobile / Tablet (< xl) */}
-      <div className="xl:hidden bg-zinc-100/90 border-t border-zinc-200/80 px-2 sm:px-4 py-1.5 w-full overflow-hidden">
-        <div className="max-w-7xl mx-auto flex items-center justify-start sm:justify-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar">
-          {rolesList.map(({ role, label, icon: Icon }) => (
-            <button
-              key={role}
-              onClick={() => setRole(role)}
-              className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs font-semibold whitespace-nowrap transition shrink-0 cursor-pointer min-h-[36px] ${
-                currentRole === role
-                  ? 'bg-orange-500 text-white shadow-xs'
-                  : 'bg-white text-zinc-700 hover:text-zinc-900 border border-zinc-200/80'
-              }`}
-            >
-              <Icon className={`w-3.5 h-3.5 ${currentRole === role ? 'text-white' : 'text-zinc-500'}`} />
-              <span>{label}</span>
-            </button>
-          ))}
+      {/* Role Navigation Sub-Bar (All Viewports) */}
+      <nav aria-label="Campus Portal Navigation" className="bg-zinc-100/95 border-t border-zinc-200/80 px-2.5 sm:px-6 lg:px-8 py-1.5 w-full">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 min-w-0">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 shrink-0 mr-1 hidden sm:inline">
+              Portal Mode:
+            </span>
+            {rolesList.map(({ role, label, icon: Icon }) => (
+              <button
+                key={role}
+                onClick={() => setRole(role)}
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition shrink-0 cursor-pointer min-h-[34px] ${
+                  currentRole === role
+                    ? 'bg-orange-500 text-white shadow-xs font-bold'
+                    : 'bg-white text-zinc-700 hover:text-zinc-900 border border-zinc-200/80 hover:bg-zinc-50'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${currentRole === role ? 'text-white' : 'text-zinc-500'}`} />
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Quick Canteen Info on Desktop */}
+          <div className="hidden lg:flex items-center gap-3 text-xs text-zinc-500 shrink-0">
+            <span className="flex items-center gap-1.5 font-medium text-zinc-700">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              {selectedCanteen.name}
+            </span>
+            <span className="text-zinc-300">•</span>
+            <span className="text-zinc-500">{selectedCanteen.location}</span>
+          </div>
         </div>
-      </div>
+      </nav>
 
       {/* Wallet Top-up Modal */}
       {showWalletModal && (

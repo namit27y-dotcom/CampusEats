@@ -33,15 +33,15 @@ const CANTEENS = [
 ];
 
 const MENU_ITEMS = [
-  { id: 1, canteen_id: 1, name: 'Special Masala Dosa', description: 'Crispy fermented crepe filled with spiced potato masala, served with coconut chutney and piping hot sambar.', price: 65, category: 'breakfast', is_available: true, is_veg: true, prep_time: 8, image_url: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=600&q=80' },
-  { id: 2, canteen_id: 1, name: 'Cold Coffee (Signature)', description: 'Chilled rich espresso blended with creamy milk, vanilla swirl, and topped with chocolate powder.', price: 50, category: 'drinks', is_available: true, is_veg: true, prep_time: 3, image_url: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=600&q=80' },
-  { id: 3, canteen_id: 1, name: 'Veg Grilled Cheese Sandwich', description: 'Multigrain bread stuffed with crunchy garden vegetables, mint spread, and melted mozzarella cheese.', price: 55, category: 'snacks', is_available: true, is_veg: true, prep_time: 6, image_url: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=600&q=80' },
-  { id: 4, canteen_id: 1, name: 'Steamed Idli Sambar (3 Pcs)', description: 'Pillowy soft steamed rice cakes served with aromatic lentil sambar and fresh tomato chutney.', price: 45, category: 'breakfast', is_available: true, is_veg: true, prep_time: 4, image_url: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=600&q=80' },
-  { id: 5, canteen_id: 1, name: 'Paneer Tikka Kathi Roll', description: 'Flaky paratha loaded with smoky spiced cottage cheese chunks, sliced onions, and tangy mint mayo.', price: 85, category: 'snacks', is_available: true, is_veg: true, prep_time: 9, image_url: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=600&q=80' },
-  { id: 6, canteen_id: 1, name: 'North Indian Thali Meal', description: 'Wholesome platter with 3 butter rotis, paneer sabzi, dal tadka, jeera rice, salad, and gulab jamun.', price: 110, category: 'meals', is_available: true, is_veg: true, prep_time: 10, image_url: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80' },
-  { id: 7, canteen_id: 1, name: 'South Indian Filter Coffee', description: 'Freshly brewed chicory blend with frothy whole milk served steaming hot in traditional dabara set.', price: 25, category: 'drinks', is_available: true, is_veg: true, prep_time: 3, image_url: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80' },
-  { id: 8, canteen_id: 1, name: 'Mumbai Vada Pav (2 Pcs)', description: 'Golden batter fried spiced potato dumplings in soft pav buns with fiery garlic peanut chutney.', price: 40, category: 'snacks', is_available: true, is_veg: true, prep_time: 4, image_url: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=600&q=80' },
-  { id: 9, canteen_id: 1, name: 'Hakka Noodles & Manchurian Combo', description: 'Wok tossed vegetable Hakka noodles paired with crunchy vegetable Manchurian balls in rich gravy.', price: 120, category: 'combos', is_available: true, is_veg: true, prep_time: 12, image_url: 'https://images.unsplash.com/photo-1612927601601-6638404737ce?auto=format&fit=crop&w=600&q=80' },
+  { id: 1, canteen_id: 1, name: 'Special Masala Dosa', description: 'Crispy fermented crepe filled with spiced potato masala, served with coconut chutney and piping hot sambar.', price: 65, category: 'breakfast', is_available: true, is_veg: true, is_vegan: true, is_gluten_free: true, dietary_tags: ['veg', 'vegan', 'gluten-free', 'dairy-free'], prep_time: 8, image_url: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=600&q=80' },
+  { id: 2, canteen_id: 1, name: 'Cold Coffee (Signature)', description: 'Chilled rich espresso blended with creamy milk, vanilla swirl, and topped with chocolate powder.', price: 50, category: 'drinks', is_available: true, is_veg: true, is_vegan: false, is_gluten_free: true, dietary_tags: ['veg', 'gluten-free'], prep_time: 3, image_url: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=600&q=80' },
+  { id: 3, canteen_id: 1, name: 'Veg Grilled Cheese Sandwich', description: 'Multigrain bread stuffed with crunchy garden vegetables, mint spread, and melted mozzarella cheese.', price: 55, category: 'snacks', is_available: true, is_veg: true, is_vegan: false, is_gluten_free: false, dietary_tags: ['veg'], prep_time: 6, image_url: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=600&q=80' },
+  { id: 4, canteen_id: 1, name: 'Steamed Idli Sambar (3 Pcs)', description: 'Pillowy soft steamed rice cakes served with aromatic lentil sambar and fresh tomato chutney.', price: 45, category: 'breakfast', is_available: true, is_veg: true, is_vegan: true, is_gluten_free: true, dietary_tags: ['veg', 'vegan', 'gluten-free', 'dairy-free'], prep_time: 4, image_url: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=600&q=80' },
+  { id: 5, canteen_id: 1, name: 'Paneer Tikka Kathi Roll', description: 'Flaky paratha loaded with smoky spiced cottage cheese chunks, sliced onions, and tangy mint mayo.', price: 85, category: 'snacks', is_available: true, is_veg: true, is_vegan: false, is_gluten_free: false, dietary_tags: ['veg', 'high-protein'], prep_time: 9, image_url: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=600&q=80' },
+  { id: 6, canteen_id: 1, name: 'North Indian Thali Meal', description: 'Wholesome platter with 3 butter rotis, paneer sabzi, dal tadka, jeera rice, salad, and gulab jamun.', price: 110, category: 'meals', is_available: true, is_veg: true, is_vegan: false, is_gluten_free: false, dietary_tags: ['veg', 'high-protein'], prep_time: 10, image_url: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80' },
+  { id: 7, canteen_id: 1, name: 'South Indian Filter Coffee', description: 'Freshly brewed chicory blend with frothy whole milk served steaming hot in traditional dabara set.', price: 25, category: 'drinks', is_available: true, is_veg: true, is_vegan: false, is_gluten_free: true, dietary_tags: ['veg', 'gluten-free'], prep_time: 3, image_url: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80' },
+  { id: 8, canteen_id: 1, name: 'Mumbai Vada Pav (2 Pcs)', description: 'Golden batter fried spiced potato dumplings in soft pav buns with fiery garlic peanut chutney.', price: 40, category: 'snacks', is_available: true, is_veg: true, is_vegan: true, is_gluten_free: false, dietary_tags: ['veg', 'vegan', 'dairy-free'], prep_time: 4, image_url: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=600&q=80' },
+  { id: 9, canteen_id: 1, name: 'Hakka Noodles & Manchurian Combo', description: 'Wok tossed vegetable Hakka noodles paired with crunchy vegetable Manchurian balls in rich gravy.', price: 120, category: 'combos', is_available: true, is_veg: true, is_vegan: true, is_gluten_free: false, dietary_tags: ['veg', 'vegan', 'dairy-free'], prep_time: 12, image_url: 'https://images.unsplash.com/photo-1612927601601-6638404737ce?auto=format&fit=crop&w=600&q=80' },
 ];
 
 let nextOrderId = 101;
@@ -49,7 +49,7 @@ const ordersDb: StoredOrder[] = [
   {
     id: 1001,
     user_id: 1,
-    student_name: 'Rahul Sharma',
+    student_name: 'Namit',
     canteen_id: 1,
     canteen_name: 'Main Campus Canteen',
     total_amount: 115,
@@ -67,7 +67,7 @@ const ordersDb: StoredOrder[] = [
   {
     id: 1002,
     user_id: 1,
-    student_name: 'Rahul Sharma',
+    student_name: 'Namit',
     canteen_id: 1,
     canteen_name: 'Main Campus Canteen',
     total_amount: 120,
@@ -219,8 +219,8 @@ export function mockApiPlugin(): Plugin {
             success: true,
             user: {
               id: 1,
-              name: 'Rahul Sharma',
-              email: 'rahul.s@campus.edu',
+              name: 'Namit',
+              email: 'namit@campus.edu',
               role: 'student',
               wallet_balance: userWalletBalance,
             },
@@ -275,7 +275,7 @@ export function mockApiPlugin(): Plugin {
           const newOrder: StoredOrder = {
             id: orderId,
             user_id: 1,
-            student_name: 'Rahul Sharma',
+            student_name: 'Namit',
             canteen_id: Number(canteenId || 1),
             canteen_name: CANTEENS.find((c) => c.id === Number(canteenId))?.name || 'Main Campus Canteen',
             total_amount: totalAmount,
