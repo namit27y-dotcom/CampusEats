@@ -141,6 +141,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [selectedCanteenId, setSelectedCanteenId] = useState<string>('canteen-main');
 
+  const selectedCanteen = useMemo(() => {
+    return canteens.find((c) => c.id === selectedCanteenId) || canteens[0];
+  }, [canteens, selectedCanteenId]);
+
   // Menu & Inventory
   const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.MENU);
@@ -763,10 +767,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAutoSimulateKitchenState(val);
     localStorage.setItem(STORAGE_KEYS.AUTO_SIM, JSON.stringify(val));
   };
-
-  const selectedCanteen = useMemo(() => {
-    return canteens.find((c) => c.id === selectedCanteenId) || canteens[0];
-  }, [canteens, selectedCanteenId]);
 
   const selectCanteen = (id: string) => {
     setSelectedCanteenId(id);
