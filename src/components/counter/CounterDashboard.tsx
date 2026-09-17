@@ -16,6 +16,33 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+const isSameCanteen = (
+  orderCanteenId?: string | number,
+  orderCanteenName?: string,
+  currentCanteen?: { id: string | number; name?: string } | null
+) => {
+  if (!currentCanteen) return true;
+  const ocId = String(orderCanteenId ?? '').trim().toLowerCase();
+  const scId = String(currentCanteen.id ?? '').trim().toLowerCase();
+
+  if (ocId && scId && ocId === scId) return true;
+
+  if ((ocId === '1' || ocId === 'canteen-main') && (scId === '1' || scId === 'canteen-main')) return true;
+  if ((ocId === '2' || ocId === 'canteen-mech') && (scId === '2' || scId === 'canteen-mech')) return true;
+  if ((ocId === '3' || ocId === 'canteen-mba') && (scId === '3' || scId === 'canteen-mba')) return true;
+  if ((ocId === '4' || ocId === 'canteen-night') && (scId === '4' || scId === 'canteen-night')) return true;
+
+  if (orderCanteenName && currentCanteen.name) {
+    const ocName = orderCanteenName.trim().toLowerCase();
+    const scName = currentCanteen.name.trim().toLowerCase();
+    if (ocName === scName || ocName.includes(scName) || scName.includes(ocName)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 export const CounterDashboard: React.FC = () => {
   const {
     orders,
@@ -36,14 +63,14 @@ export const CounterDashboard: React.FC = () => {
   // Ready orders waiting for student pickup
   const readyOrders = orders.filter(
     (o) =>
-      o.canteenId === selectedCanteen.id &&
+      isSameCanteen(o.canteenId, o.canteenName, selectedCanteen) &&
       o.status === 'READY' &&
       (selectedCounter === 'all' || o.pickupCounter.includes(selectedCounter))
   );
 
   // Recently collected orders for audit
   const recentCollected = orders
-    .filter((o) => o.canteenId === selectedCanteen.id && o.status === 'COLLECTED')
+    .filter((o) => isSameCanteen(o.canteenId, o.canteenName, selectedCanteen) && o.status === 'COLLECTED')
     .slice(0, 6);
 
   const handleManualVerify = async (e: React.FormEvent) => {

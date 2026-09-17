@@ -597,6 +597,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     socket.on("connect", () => {
       console.log("CampusEats Socket.IO connected");
 
+      const isStaff =
+        ["kitchen", "counter", "admin"].includes(String(currentUser.role).toLowerCase()) ||
+        ["kitchen", "counter", "admin"].includes(String(currentRole).toLowerCase());
+
+      if (isStaff && selectedCanteen?.id) {
+        socket.emit("joinCanteen", selectedCanteen.id);
+        console.log(`Staff socket joined canteen room: canteen_${selectedCanteen.id}`);
+      }
+
       orders
         .filter((order) =>
           ["CONFIRMED", "ACCEPTED", "PREPARING", "READY"].includes(order.status)
@@ -612,14 +621,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       socket.emit("joinOrder", data.id);
 
+      const isStaff =
+        ["kitchen", "counter", "admin"].includes(String(currentUser.role).toLowerCase()) ||
+        ["kitchen", "counter", "admin"].includes(String(currentRole).toLowerCase());
+
+      if (isStaff) {
+        try {
+          playOrderPlacedSound();
+        } catch (e) {}
+      }
+
       setOrders((prev) => {
         if (prev.some((o) => Number(o.id) === Number(data.id))) {
           return prev;
         }
 
-        const isStaff =
-          ["kitchen", "counter", "admin"].includes(String(currentUser.role).toLowerCase()) ||
-          ["kitchen", "counter", "admin"].includes(String(currentRole).toLowerCase());
         const isMyOrder = String(data.user_id || data.userId) === String(currentUser.id);
 
         if (!isStaff && !isMyOrder) {
@@ -711,6 +727,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       socketRef.current = null;
     };
   }, [currentUser?.id, currentUser?.role, currentRole]);
+
+  // Synchronize canteen room on active socket when selected canteen changes
+  useEffect(() => {
+    if (socketRef.current && selectedCanteen?.id) {
+      const isStaff =
+        ["kitchen", "counter", "admin"].includes(String(currentUser?.role).toLowerCase()) ||
+        ["kitchen", "counter", "admin"].includes(String(currentRole).toLowerCase());
+
+      if (isStaff) {
+        socketRef.current.emit("joinCanteen", selectedCanteen.id);
+        console.log(`Synchronized socket to canteen room: canteen_${selectedCanteen.id}`);
+      }
+    }
+  }, [selectedCanteen?.id, currentUser?.role, currentRole]);
 
   // Persist key states
   useEffect(() => {

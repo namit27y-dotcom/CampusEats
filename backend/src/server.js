@@ -195,12 +195,54 @@ io.on("connection", (socket) => {
         }
     });
 
-    socket.on("joinCanteen", (canteenId) => {
+    socket.on("joinCanteen", async (canteenId) => {
         if (!canteenId) return;
+
         const user = socket.user;
-        if (user && ["kitchen", "counter", "admin"].includes(String(user.role).toLowerCase())) {
+        if (!user) {
+            return socket.emit("socketError", {
+                message: "Authentication required to join canteen real-time updates."
+            });
+        }
+
+        const role = String(user.role).toLowerCase();
+        if (!["kitchen", "counter", "admin"].includes(role)) {
+            return socket.emit("socketError", {
+                message: "Unauthorized: Only authorized canteen staff can join canteen rooms."
+            });
+        }
+
+        // Admin has authorized access across all canteens
+        if (role === "admin") {
             socket.join(`canteen_${canteenId}`);
-            console.log(`Staff socket ${socket.id} joined canteen_${canteenId}`);
+            console.log(`Admin socket ${socket.id} joined canteen_${canteenId}`);
+            return;
+        }
+
+        // Kitchen and Counter staff: Verify server-side assigned canteen
+        try {
+            const [rows] = await pool.query(
+                "SELECT id, role, canteen_id FROM users WHERE id = ?",
+                [user.id]
+            );
+
+            const staffUser = rows.length > 0 ? rows[0] : user;
+            const assignedCanteen = staffUser.canteen_id;
+
+            if (assignedCanteen != null && assignedCanteen !== "") {
+                if (String(assignedCanteen) !== String(canteenId)) {
+                    console.warn(`Staff #${user.id} assigned to Canteen #${assignedCanteen} rejected from joining Canteen #${canteenId}`);
+                    return socket.emit("socketError", {
+                        message: `Unauthorized: Staff assigned to Canteen #${assignedCanteen} cannot join Canteen #${canteenId}.`
+                    });
+                }
+            }
+
+            socket.join(`canteen_${canteenId}`);
+            console.log(`Staff socket ${socket.id} (${role}) authorized for canteen_${canteenId}`);
+        } catch (err) {
+            console.error(`Error authorizing socket joinCanteen [canteen #${canteenId}]:`, err);
+            socket.join(`canteen_${canteenId}`);
         }
     });
 

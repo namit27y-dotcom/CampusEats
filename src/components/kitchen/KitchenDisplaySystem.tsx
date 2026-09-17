@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Order, OrderStatus } from '../../types';
 import {
@@ -8,11 +8,37 @@ import {
   AlertTriangle,
   Flame,
   Volume2,
-  Layers,
-  Sparkles,
-  ArrowRight,
   Filter,
+  Check,
 } from 'lucide-react';
+
+const isSameCanteen = (
+  orderCanteenId?: string | number,
+  orderCanteenName?: string,
+  currentCanteen?: { id: string | number; name?: string } | null
+) => {
+  if (!currentCanteen) return true;
+  const ocId = String(orderCanteenId ?? '').trim().toLowerCase();
+  const scId = String(currentCanteen.id ?? '').trim().toLowerCase();
+
+  if (ocId && scId && ocId === scId) return true;
+
+  // Cross-mapping string slugs to numeric database IDs
+  if ((ocId === '1' || ocId === 'canteen-main') && (scId === '1' || scId === 'canteen-main')) return true;
+  if ((ocId === '2' || ocId === 'canteen-mech') && (scId === '2' || scId === 'canteen-mech')) return true;
+  if ((ocId === '3' || ocId === 'canteen-mba') && (scId === '3' || scId === 'canteen-mba')) return true;
+  if ((ocId === '4' || ocId === 'canteen-night') && (scId === '4' || scId === 'canteen-night')) return true;
+
+  if (orderCanteenName && currentCanteen.name) {
+    const ocName = orderCanteenName.trim().toLowerCase();
+    const scName = currentCanteen.name.trim().toLowerCase();
+    if (ocName === scName || ocName.includes(scName) || scName.includes(ocName)) {
+      return true;
+    }
+  }
+
+  return false;
+};
 
 export const KitchenDisplaySystem: React.FC = () => {
   const {
@@ -22,18 +48,18 @@ export const KitchenDisplaySystem: React.FC = () => {
     callToken,
   } = useApp();
 
-  const [activeFilter, setActiveFilter] = useState<'all' | 'accepted' | 'preparing' | 'ready'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'new' | 'preparing' | 'ready'>('all');
   const [kitchenMode, setKitchenMode] = useState<'normal' | 'rush'>('normal');
 
   // Filter orders relevant to this canteen that are currently active in kitchen
   const kitchenOrders = orders.filter(
     (o) =>
-      o.canteenId === selectedCanteen.id &&
+      isSameCanteen(o.canteenId, o.canteenName, selectedCanteen) &&
       ['CONFIRMED', 'ACCEPTED', 'PREPARING', 'READY'].includes(o.status)
   );
 
   const displayedOrders = kitchenOrders.filter((ord) => {
-    if (activeFilter === 'accepted') return ord.status === 'CONFIRMED' || ord.status === 'ACCEPTED';
+    if (activeFilter === 'new') return ord.status === 'CONFIRMED' || ord.status === 'ACCEPTED';
     if (activeFilter === 'preparing') return ord.status === 'PREPARING';
     if (activeFilter === 'ready') return ord.status === 'READY';
     return true;
@@ -45,8 +71,8 @@ export const KitchenDisplaySystem: React.FC = () => {
     return Math.max(0, Math.floor(diff / 60000));
   };
 
+  const newOrdersCount = kitchenOrders.filter((o) => o.status === 'CONFIRMED' || o.status === 'ACCEPTED').length;
   const preparingCount = kitchenOrders.filter((o) => o.status === 'PREPARING').length;
-  const acceptedCount = kitchenOrders.filter((o) => o.status === 'CONFIRMED' || o.status === 'ACCEPTED').length;
   const readyCount = kitchenOrders.filter((o) => o.status === 'READY').length;
 
   return (
@@ -79,7 +105,7 @@ export const KitchenDisplaySystem: React.FC = () => {
             <div className="flex items-center gap-2.5 sm:gap-3 bg-zinc-800/90 px-3 sm:px-4 py-2 rounded-2xl border border-zinc-700 text-xs">
               <div>
                 <div className="text-[10px] text-zinc-400 uppercase font-semibold">In Queue</div>
-                <div className="text-base font-extrabold font-mono text-orange-400">{acceptedCount}</div>
+                <div className="text-base font-extrabold font-mono text-orange-400">{newOrdersCount}</div>
               </div>
               <div className="w-px h-6 bg-zinc-700"></div>
               <div>
@@ -114,14 +140,14 @@ export const KitchenDisplaySystem: React.FC = () => {
           </span>
           {[
             { id: 'all', label: `All Active (${kitchenOrders.length})` },
-            { id: 'accepted', label: `New Tickets (${acceptedCount})` },
+            { id: 'new', label: `New / Queue (${newOrdersCount})` },
             { id: 'preparing', label: `Currently Cooking (${preparingCount})` },
             { id: 'ready', label: `Ready for Pickup (${readyCount})` },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveFilter(tab.id as typeof activeFilter)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
                 activeFilter === tab.id
                   ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
                   : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
@@ -133,13 +159,13 @@ export const KitchenDisplaySystem: React.FC = () => {
         </div>
       </div>
 
-      {/* Ticket Grid (PRD 16) */}
+      {/* Ticket Grid */}
       {displayedOrders.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-3xl border border-zinc-100 shadow-xs">
           <ChefHat className="w-12 h-12 text-zinc-300 mx-auto mb-3" />
           <h3 className="font-heading font-bold text-base text-zinc-800">No active tickets right now</h3>
           <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
-            All orders are fulfilled or collected! New student pre-orders will appear here automatically with audio alert.
+            All orders are fulfilled or collected! New student pre-orders will appear here automatically in real time.
           </p>
         </div>
       ) : (
@@ -147,9 +173,9 @@ export const KitchenDisplaySystem: React.FC = () => {
           {displayedOrders.map((order) => {
             const elapsedMins = getElapsedMinutes(order.createdAt);
             const isLate = elapsedMins >= 10;
-            const isWarning = elapsedMins >= 5 && elapsedMins < 10;
 
-            const isAccepted = order.status === 'CONFIRMED' || order.status === 'ACCEPTED';
+            const isPlaced = order.status === 'CONFIRMED';
+            const isAccepted = order.status === 'ACCEPTED';
             const isPreparing = order.status === 'PREPARING';
             const isReady = order.status === 'READY';
 
@@ -161,6 +187,8 @@ export const KitchenDisplaySystem: React.FC = () => {
                     ? 'border-emerald-300 ring-2 ring-emerald-100'
                     : isPreparing
                     ? 'border-amber-300 ring-2 ring-amber-50'
+                    : isAccepted
+                    ? 'border-blue-300 ring-2 ring-blue-50'
                     : 'border-orange-300 ring-2 ring-orange-50'
                 }`}
               >
@@ -171,11 +199,13 @@ export const KitchenDisplaySystem: React.FC = () => {
                       ? 'bg-gradient-to-r from-emerald-600 to-teal-600'
                       : isPreparing
                       ? 'bg-gradient-to-r from-amber-600 to-orange-600'
+                      : isAccepted
+                      ? 'bg-gradient-to-r from-blue-600 to-cyan-600'
                       : 'bg-gradient-to-r from-orange-600 to-amber-600'
                   }`}
                 >
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-85">
+                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-90">
                       Order #{order.id} • {order.pickupSlot}
                     </span>
                     <div className="text-3xl font-black font-mono tracking-tight text-white mt-0.5">
@@ -199,11 +229,11 @@ export const KitchenDisplaySystem: React.FC = () => {
                   <div className="flex items-center justify-between text-xs text-zinc-500 pb-2 border-b border-zinc-100">
                     <span className="font-semibold text-zinc-700">{order.userName}</span>
                     <span className="capitalize text-[11px] bg-zinc-100 px-2 py-0.5 rounded-full font-bold text-zinc-600">
-                      {order.userRole}
+                      {order.status === 'CONFIRMED' ? 'New Order' : order.status.toLowerCase()}
                     </span>
                   </div>
 
-                  {/* List of food items with huge font for kitchen legibility */}
+                  {/* List of food items */}
                   <div className="space-y-2">
                     {order.items.map((it, idx) => (
                       <div
@@ -237,12 +267,22 @@ export const KitchenDisplaySystem: React.FC = () => {
                   )}
                 </div>
 
-                {/* Ticket Action Buttons (PRD 16: Accepted -> Preparing -> Ready) */}
+                {/* Ticket Action Buttons (Strict State Machine: Placed -> Accepted -> Preparing -> Ready -> Completed) */}
                 <div className="p-4 bg-zinc-50 border-t border-zinc-100 flex flex-col gap-2">
+                  {isPlaced && (
+                    <button
+                      onClick={() => updateOrderStatus(order.id, 'ACCEPTED')}
+                      className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold shadow-md shadow-blue-600/20 transition flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>Accept Order</span>
+                    </button>
+                  )}
+
                   {isAccepted && (
                     <button
                       onClick={() => updateOrderStatus(order.id, 'PREPARING')}
-                      className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold shadow-md shadow-amber-600/20 transition flex items-center justify-center gap-1.5 active:scale-98"
+                      className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold shadow-md shadow-amber-600/20 transition flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
                     >
                       <ChefHat className="w-4 h-4" />
                       <span>Start Cooking (Move to Preparing)</span>
@@ -252,7 +292,7 @@ export const KitchenDisplaySystem: React.FC = () => {
                   {isPreparing && (
                     <button
                       onClick={() => updateOrderStatus(order.id, 'READY')}
-                      className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-1.5 active:scale-98"
+                      className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       <span>Mark Ready & Notify Student</span>
@@ -263,7 +303,7 @@ export const KitchenDisplaySystem: React.FC = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => callToken(order.id)}
-                        className="flex-1 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-extrabold shadow-xs transition flex items-center justify-center gap-1"
+                        className="flex-1 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-extrabold shadow-xs transition flex items-center justify-center gap-1 cursor-pointer"
                         title="Announce token over canteen speakers"
                       >
                         <Volume2 className="w-3.5 h-3.5" />
@@ -271,7 +311,7 @@ export const KitchenDisplaySystem: React.FC = () => {
                       </button>
                       <button
                         onClick={() => updateOrderStatus(order.id, 'COLLECTED')}
-                        className="flex-1 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-extrabold transition flex items-center justify-center gap-1"
+                        className="flex-1 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-extrabold transition flex items-center justify-center gap-1 cursor-pointer"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                         <span>Collected</span>
@@ -287,3 +327,5 @@ export const KitchenDisplaySystem: React.FC = () => {
     </div>
   );
 };
+
+export default KitchenDisplaySystem;
