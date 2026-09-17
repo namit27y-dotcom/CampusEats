@@ -747,12 +747,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const setRole = (role: UserRole) => {
-    setRoleState(role);
+    const authRole = (currentUser?.role || 'student').toLowerCase() as UserRole;
+    
+    // Only allow role transition if authorized by authenticated backend role
+    if (authRole === 'admin') {
+      setRoleState(role);
+    } else if (authRole === role) {
+      setRoleState(role);
+    } else {
+      console.warn(`[RBAC] Blocked unauthorized client role switch from '${authRole}' to '${role}'.`);
+      setRoleState(authRole);
+    }
   };
 
   const setCurrentUser = (user: UserProfile) => {
-    setCurrentUserState(user);
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    if (user.id === currentUser.id) {
+      setCurrentUserState(user);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    } else {
+      console.warn("[RBAC] Client-side persona switching is disabled for authenticated users.");
+    }
   };
 
   const loginUser = async (email: string, password: string): Promise<UserProfile> => {

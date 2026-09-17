@@ -59,6 +59,14 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
     { role: 'admin', label: 'Campus Admin', icon: LayoutDashboard },
   ];
 
+  const userRole = (currentUser?.role || 'student').toLowerCase();
+  const authorizedRolesList = rolesList.filter((item) => {
+    if (userRole === 'admin') return item.role === 'admin';
+    if (userRole === 'kitchen') return item.role === 'kitchen';
+    if (userRole === 'counter') return item.role === 'counter';
+    return item.role === 'student';
+  });
+
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200 shadow-xs w-full max-w-full">
       {/* Top Banner / Ticker */}
@@ -320,28 +328,20 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
                       </button>
                     </div>
 
-                    <div className="text-[10px] font-semibold text-zinc-400 px-3 py-1 uppercase border-t border-zinc-100">
-                      Switch Campus Persona
-                    </div>
-                    <div className="space-y-1">
-                      {availableUsers.map((u) => (
-                        <button
-                          key={u.id}
-                          onClick={() => {
-                            setCurrentUser(u);
-                            setShowUserDropdown(false);
-                          }}
-                          className={`w-full text-left px-3 py-1.5 text-xs rounded-xl transition flex items-center justify-between cursor-pointer ${
-                            u.id === currentUser.id ? 'bg-orange-50 font-bold text-orange-950' : 'hover:bg-zinc-50 text-zinc-700'
-                          }`}
-                        >
-                          <div>
-                            <div>{u.name}</div>
-                            <div className="text-[10px] text-zinc-400">{u.role === 'faculty' ? 'Faculty Member' : 'Student'}</div>
-                          </div>
-                          <span className="text-[11px] font-mono text-emerald-600 font-semibold">₹{u.walletBalance}</span>
-                        </button>
-                      ))}
+                    <div className="px-3 py-2 border-t border-zinc-100">
+                      <div className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+                        Authenticated Role
+                      </div>
+                      <div className="text-xs font-bold text-zinc-800 mt-1 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        {currentUser.role === 'kitchen'
+                          ? 'Kitchen Staff (KDS)'
+                          : currentUser.role === 'counter'
+                          ? 'Pickup Counter Staff'
+                          : currentUser.role === 'admin'
+                          ? 'Campus Administrator'
+                          : 'Student / Faculty Member'}
+                      </div>
                     </div>
 
                     <div className="pt-2 border-t border-zinc-100">
@@ -386,21 +386,16 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 min-w-0">
             <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 shrink-0 mr-1 hidden sm:inline">
-              Portal Mode:
+              Active Portal:
             </span>
-            {rolesList.map(({ role, label, icon: Icon }) => (
-              <button
+            {authorizedRolesList.map(({ role, label, icon: Icon }) => (
+              <div
                 key={role}
-                onClick={() => setRole(role)}
-                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition shrink-0 cursor-pointer min-h-[34px] ${
-                  currentRole === role
-                    ? 'bg-orange-500 text-white shadow-xs font-bold'
-                    : 'bg-white text-zinc-700 hover:text-zinc-900 border border-zinc-200/80 hover:bg-zinc-50'
-                }`}
+                className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-orange-500 text-white shadow-xs shrink-0 select-none min-h-[34px]"
               >
-                <Icon className={`w-3.5 h-3.5 ${currentRole === role ? 'text-white' : 'text-zinc-500'}`} />
+                <Icon className="w-3.5 h-3.5 text-white" />
                 <span>{label}</span>
-              </button>
+              </div>
             ))}
           </div>
 
