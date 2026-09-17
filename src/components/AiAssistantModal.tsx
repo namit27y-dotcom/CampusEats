@@ -35,52 +35,74 @@ export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({ isOpen, onCl
   const [chatInput, setChatInput] = useState<string>('');
   const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
 
+  const [apiError, setApiError] = useState<string | null>(null);
+
   if (!isOpen) return null;
 
   const handleGetRecommendation = async () => {
     setIsLoadingRec(true);
+    setApiError(null);
     try {
-      // Filter menu items matching dietary preference and budget
-      const matchingItems = menuItems.filter((item) => {
-        if (!item.inStock) return false;
-        if (dietPreference === 'veg' && !item.isVeg) return false;
-        return item.price <= budget;
+      const token = localStorage.getItem("token");
+      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+      const prompt = craving 
+        ? `Suggest a ${craving} meal for ${timeSlot} under ₹${budget}` 
+        : `Suggest a ${dietPreference === 'veg' ? 'vegetarian' : ''} meal for ${timeSlot} under ₹${budget}`;
+
+      const res = await fetch(`${apiBase}/ai/recommend`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          prompt,
+          budget,
+          dietary: dietPreference,
+        })
       });
 
-      // Find top pairing items within budget
-      let selectedItems: typeof menuItems = [];
-      let total = 0;
-
-      for (const item of matchingItems) {
-        if (total + item.price <= budget && selectedItems.length < 3) {
-          selectedItems.push(item);
-          total += item.price;
-        }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: "AI recommendation unavailable" }));
+        throw new Error(err.message || "Failed to fetch AI recommendations");
       }
 
-      if (selectedItems.length === 0 && matchingItems.length > 0) {
-        selectedItems = [matchingItems[0]];
-        total = matchingItems[0].price;
+      const json = await res.json();
+      if (json.success && json.data) {
+        const recList = json.data.recommendations || [];
+        const itemIds = recList.map((it: any) => {
+          const directMatch = menuItems.find(m => String(m.id).replace(/\D/g, '') === String(it.menuItemId));
+          return directMatch ? directMatch.id : `item-${it.menuItemId}`;
+        });
+        const total = recList.reduce((acc: number, it: any) => acc + (Number(it.price) || 0), 0);
+
+        setRecommendation({
+          recommendationTitle: craving ? `Chef's Pick: ${craving}` : `Smart ${timeSlot.toUpperCase()} Recommendation`,
+          recommendedItemIds: itemIds,
+          totalEstimatedPrice: total > 0 ? total : budget,
+          rationale: json.data.summary || `Personalized selection within your ₹${budget} budget.`,
+          quickTip: recList.length > 0 ? `Ready in ~${recList[0].estimatedWaitMinutes || 8} mins.` : 'Pre-order now to skip the queue!',
+        });
       }
-
-      const itemIds = selectedItems.map((i) => i.id);
-      const title = craving
-        ? `Chef's Pick: ${craving} Meal Combo`
-        : timeSlot === 'breakfast'
-        ? 'Morning Power Energizer Combo'
-        : timeSlot === 'lunch'
-        ? 'Satisfying Midday Canteen Combo'
-        : 'Quick Study Break Bite';
-
-      setRecommendation({
-        recommendationTitle: title,
-        recommendedItemIds: itemIds,
-        totalEstimatedPrice: total,
-        rationale: `Selected fresh items under your ₹${budget} budget perfectly matched for ${timeSlot}.`,
-        quickTip: 'Pre-order now to bypass the counter rush and get your digital token ready!',
-      });
-    } catch (e) {
-      console.error(e);
+    } catch (err: any) {
+      if (import.meta.env.VITE_USE_MOCK === 'true') {
+        // Safe dev fallback in explicit mock mode only
+        const matchingItems = menuItems.filter((item) => {
+          if (!item.inStock) return false;
+          if (dietPreference === 'veg' && !item.isVeg) return false;
+          return item.price <= budget;
+        });
+        const selected = matchingItems.slice(0, 2);
+        setRecommendation({
+          recommendationTitle: `Mock Recommendation: ${timeSlot.toUpperCase()}`,
+          recommendedItemIds: selected.map(i => i.id),
+          totalEstimatedPrice: selected.reduce((s, i) => s + i.price, 0),
+          rationale: `Selected fresh items matching ₹${budget} budget in mock mode.`,
+          quickTip: 'Mock mode recommendation generated.'
+        });
+      } else {
+        setApiError(err.message || "Unable to reach CampusEats AI service. Please verify you are logged in.");
+      }
     } finally {
       setIsLoadingRec(false);
     }
@@ -96,37 +118,46 @@ export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({ isOpen, onCl
     setIsChatLoading(true);
 
     try {
-      const lower = userMsg.toLowerCase();
-      let reply = '';
+      const token = localStorage.getItem("token");
+      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-      if (lower.includes('budget') || lower.includes('cheap') || lower.includes('under') || lower.includes('price')) {
-        const pocketItems = menuItems.filter((m) => m.price <= 60 && m.inStock).map((m) => `${m.name} (₹${m.price})`);
-        reply = pocketItems.length > 0
-          ? `Here are top pocket-friendly picks under ₹60: ${pocketItems.join(', ')}.`
-          : 'Check out our snacks and beverages section for great affordable meals!';
-      } else if (lower.includes('veg') || lower.includes('vegetarian') || lower.includes('jain')) {
-        const vegList = menuItems.filter((m) => m.isVeg && m.inStock).slice(0, 4).map((m) => m.name);
-        reply = `We have fresh 100% pure veg items ready: ${vegList.join(', ')}.`;
-      } else if (lower.includes('fast') || lower.includes('quick') || lower.includes('hurry') || lower.includes('rush') || lower.includes('time')) {
-        const fastList = menuItems.filter((m) => m.prepTimeMinutes <= 5 && m.inStock).map((m) => `${m.name} (~${m.prepTimeMinutes}m)`);
-        reply = fastList.length > 0
-          ? `In a rush between classes? These items take under 5 minutes: ${fastList.join(', ')}.`
-          : 'Beverages and cold sandwiches are prepared fastest!';
-      } else if (lower.includes('combo') || lower.includes('deal') || lower.includes('special')) {
-        const combos = menuItems.filter((m) => m.category === 'combos' && m.inStock).map((m) => `${m.name} (₹${m.price})`);
-        reply = combos.length > 0
-          ? `Our popular campus combos right now: ${combos.join(', ')}.`
-          : 'Try pairing any meal bowl with a cold coffee for an instant campus combo!';
+      const res = await fetch(`${apiBase}/ai/recommend`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          prompt: userMsg,
+          budget,
+          dietary: dietPreference
+        })
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const summary = json.data?.summary;
+        const recs = (json.data?.recommendations || []).map((r: any) => `• ${r.name} (₹${r.price}) - ${r.reason}`).join('\n');
+        const reply = recs ? `${summary}\n\n${recs}` : summary || "I found no matching dishes for your query right now.";
+        setChatMessages((prev) => [...prev, { role: 'assistant', text: reply }]);
       } else {
-        reply = `For "${userMsg}", I recommend checking the Main Canteen specials! You can also use our budget combo builder in the Recommendations tab.`;
+        const err = await res.json().catch(() => ({ message: "AI response failed" }));
+        throw new Error(err.message);
       }
-
-      setChatMessages((prev) => [...prev, { role: 'assistant', text: reply }]);
-    } catch {
-      setChatMessages((prev) => [
-        ...prev,
-        { role: 'assistant', text: 'I am here to help you pick meals, check preparation times, and save money on campus!' },
-      ]);
+    } catch (err: any) {
+      if (import.meta.env.VITE_USE_MOCK === 'true') {
+        const lower = userMsg.toLowerCase();
+        let reply = `For "${userMsg}", try our fresh daily combos!`;
+        if (lower.includes('budget') || lower.includes('cheap')) {
+          reply = 'Our budget friendly items include Vada Pav (₹40), Idli Sambar (₹45), and Filter Coffee (₹25).';
+        }
+        setChatMessages((prev) => [...prev, { role: 'assistant', text: reply }]);
+      } else {
+        setChatMessages((prev) => [
+          ...prev,
+          { role: 'assistant', text: `Sorry, I couldn't process your request: ${err.message || 'Please ensure you are logged in.'}` },
+        ]);
+      }
     } finally {
       setIsChatLoading(false);
     }
@@ -272,11 +303,20 @@ export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({ isOpen, onCl
                 />
               </div>
 
+              {apiError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center justify-between">
+                  <span>{apiError}</span>
+                  <button onClick={() => handleGetRecommendation()} className="underline font-bold hover:text-rose-900 cursor-pointer">
+                    Retry
+                  </button>
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={handleGetRecommendation}
                 disabled={isLoadingRec}
-                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isLoadingRec ? (
                   <>

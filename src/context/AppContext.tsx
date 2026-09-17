@@ -541,6 +541,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const socket = io(socketBase, {
       transports: ["websocket", "polling"],
+      auth: {
+        token: token || undefined,
+      },
       reconnectionAttempts: 2,
       timeout: 3000,
     });
@@ -745,6 +748,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return user;
     } catch (apiErr: any) {
+      const isMockMode = import.meta.env.VITE_USE_MOCK === 'true';
       const isConnectionError =
         apiErr.message?.includes("Unable to reach backend server") ||
         apiErr.message?.includes("Network request failed") ||
@@ -753,8 +757,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         apiErr.message?.includes("status 404") ||
         apiErr.message?.includes("NetworkError");
 
-      if (isConnectionError) {
-        // Find in initial demo users or match by email
+      if (isMockMode && isConnectionError) {
+        // Only allowed when explicit VITE_USE_MOCK=true is configured
         const matched = INITIAL_USERS.find(
           (u) => u.email.toLowerCase() === email.toLowerCase()
         );
@@ -797,6 +801,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return fallbackUser;
       }
 
+      // Production / Live backend mode: Show true error and do not forge data
       throw apiErr;
     }
   };
@@ -820,6 +825,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return await loginUser(email, password);
     } catch (apiErr: any) {
+      const isMockMode = import.meta.env.VITE_USE_MOCK === 'true';
       const isConnectionError =
         apiErr.message?.includes("Unable to reach backend server") ||
         apiErr.message?.includes("Network request failed") ||
@@ -828,7 +834,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         apiErr.message?.includes("status 404") ||
         apiErr.message?.includes("NetworkError");
 
-      if (isConnectionError) {
+      if (isMockMode && isConnectionError) {
         const fallbackUser: UserProfile = {
           id: `usr-${Date.now()}`,
           name,
@@ -850,6 +856,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return fallbackUser;
       }
 
+      // Production / Live backend mode: Show true error
       throw apiErr;
     }
   };
@@ -1543,24 +1550,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setMenuItems((prev) => [newItem, ...prev]);
   };
 
-  const updateInventoryStock = (itemId: string, newStock: number) => {
+  const updateInventoryStock = async (itemId: string, newStock: number) => {
     setInventory((prev) =>
       prev.map((inv) => (inv.id === itemId ? { ...inv, currentStock: newStock } : inv))
     );
+
+    // Persist to backend if numeric ID
+    const numericId = Number(itemId.replace(/^item-/, ""));
+    if (!isNaN(numericId) && numericId > 0) {
+      try {
+        await apiRequest(`/menu/${numericId}/stock`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            stockQuantity: newStock,
+            isTracked: true,
+            isAvailable: newStock > 0,
+          }),
+        });
+      } catch (err) {
+        console.warn("Backend stock sync notice:", err);
+      }
+    }
   };
 
-  const restockItem = (itemId: string, addAmount: number) => {
+  const restockItem = async (itemId: string, addAmount: number) => {
+    let updatedStock = addAmount;
     setInventory((prev) =>
       prev.map((inv) => {
         if (inv.id === itemId) {
           const updated = Math.min(inv.maxStock, inv.currentStock + addAmount);
+          updatedStock = updated;
           return { ...inv, currentStock: updated };
         }
         return inv;
       })
     );
+
+    const numericId = Number(itemId.replace(/^item-/, ""));
+    if (!isNaN(numericId) && numericId > 0) {
+      try {
+        await apiRequest(`/menu/${numericId}/stock`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            stockQuantity: updatedStock,
+            isTracked: true,
+            isAvailable: true,
+          }),
+        });
+      } catch (err) {
+        console.warn("Backend restock sync notice:", err);
+      }
+    }
+
     addNotification({
-      title: 'Inventory Restocked ðŸ“¦',
+      title: 'Inventory Restocked 📦',
       message: `Added +${addAmount} units to stock.`,
       type: 'info',
     });

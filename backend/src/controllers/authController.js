@@ -4,7 +4,7 @@ import pool from "../config/db.js";
 
 export const register = async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
+        let { name, email, password } = req.body;
 
         if (!name || !email || !password) {
             return res.status(400).json({
@@ -12,6 +12,49 @@ export const register = async (req, res) => {
                 message: "Name, email and password are required"
             });
         }
+
+        name = String(name).trim();
+        email = String(email).trim().toLowerCase();
+
+        // Email format validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid email format"
+            });
+        }
+
+        // 1. Password strength validation:
+        // - Minimum 8 characters
+        // - At least one numeric digit
+        // - At least one special character
+        if (password.length < 8) {
+            return res.status(400).json({
+                success: false,
+                message: "Password must be at least 8 characters long"
+            });
+        }
+
+        const hasNumber = /\d/.test(password);
+        if (!hasNumber) {
+            return res.status(400).json({
+                success: false,
+                message: "Password must contain at least one numeric digit"
+            });
+        }
+
+        const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password);
+        if (!hasSpecialChar) {
+            return res.status(400).json({
+                success: false,
+                message: "Password must contain at least one special character (e.g. !@#$%^&*)"
+            });
+        }
+
+        // 2. Strict Role Policy: Public registration is ALWAYS 'student'
+        // Staff and Admin accounts cannot be self-assigned via public registration
+        const assignedRole = "student";
 
         const [existingUsers] = await pool.query(
             "SELECT id FROM users WHERE email = ?",
@@ -29,17 +72,18 @@ export const register = async (req, res) => {
 
         const [result] = await pool.query(
             "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
-            [name, email, hashedPassword, role || "student"]
+            [name, email, hashedPassword, assignedRole]
         );
 
         res.status(201).json({
             success: true,
             message: "User registered successfully",
-            userId: result.insertId
+            userId: result.insertId,
+            role: assignedRole
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("Registration error:", error);
 
         res.status(500).json({
             success: false,

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Order, OrderFeedback } from '../../types';
 import { getFoodImage, handleImageError } from '../../utils/foodImages';
+import { downloadOrderInvoice } from '../../utils/invoiceDownload';
 import {
   X,
   History,
@@ -12,6 +13,7 @@ import {
   Plus,
   MessageSquare,
   Check,
+  FileText,
 } from 'lucide-react';
 
 interface OrderHistoryModalProps {
@@ -208,6 +210,15 @@ export const OrderHistoryModal: React.FC<OrderHistoryModalProps> = ({
                             <span>{ord.feedback ? 'Rated' : 'Rate Food'}</span>
                           </button>
                         )}
+
+                        <button
+                          onClick={() => downloadOrderInvoice(ord.id, ord.tokenNumber)}
+                          className="px-2.5 py-1 text-xs font-bold rounded-lg border border-zinc-200 text-zinc-700 hover:bg-zinc-50 flex items-center gap-1 transition"
+                          title="Download PDF Receipt"
+                        >
+                          <FileText className="w-3 h-3 text-orange-600" />
+                          <span>Invoice</span>
+                        </button>
 
                         <button
                           onClick={() => {

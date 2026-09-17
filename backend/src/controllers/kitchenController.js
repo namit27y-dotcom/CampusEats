@@ -100,7 +100,42 @@ export const updateOrderStatus = async (req, res) => {
         if (!allowedStatuses.includes(status)) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid order status"
+                message: `Invalid order status '${status}'`
+            });
+        }
+
+        // Fetch current order status first
+        const [orders] = await pool.query(
+            "SELECT id, status, canteen_id, user_id FROM orders WHERE id = ?",
+            [id]
+        );
+
+        if (orders.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found"
+            });
+        }
+
+        const currentStatus = orders[0].status;
+
+        // Strict State Machine Transitions
+        const validTransitions = {
+            placed: ["accepted", "cancelled"],
+            accepted: ["preparing", "cancelled"],
+            preparing: ["ready"],
+            ready: ["completed"],
+            completed: [],
+            cancelled: []
+        };
+
+        const allowedNext = validTransitions[currentStatus] || [];
+        if (!allowedNext.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid status transition: Cannot change order from '${currentStatus}' to '${status}'`,
+                currentStatus,
+                allowedTransitions: allowedNext
             });
         }
 
@@ -114,7 +149,7 @@ export const updateOrderStatus = async (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(404).json({
                 success: false,
-                message: "Order not found"
+                message: "Order not found or status already updated"
             });
         }
 
@@ -125,7 +160,7 @@ export const updateOrderStatus = async (req, res) => {
                 orderId: Number(id),
                 status
             });
-            io.emit("orderStatusUpdated", {
+            io.to(`canteen_${orders[0].canteen_id}`).emit("orderStatusUpdated", {
                 orderId: Number(id),
                 status
             });
@@ -133,7 +168,7 @@ export const updateOrderStatus = async (req, res) => {
 
         res.json({
             success: true,
-            message: "Order status updated successfully",
+            message: `Order status updated to '${status}' successfully`,
             orderId: Number(id),
             status
         });

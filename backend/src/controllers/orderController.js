@@ -39,9 +39,12 @@ export const createOrder = async (req, res) => {
             }
 
             const [menuItems] = await connection.query(
-                `SELECT id, name, price, is_available
+                `SELECT id, name, price, is_available,
+                        COALESCE(stock_quantity, 100) AS stock_quantity,
+                        COALESCE(is_tracked, 0) AS is_tracked
                  FROM menu_items
-                 WHERE id = ? AND canteen_id = ?`,
+                 WHERE id = ? AND canteen_id = ?
+                 FOR UPDATE`,
                 [item.menuItemId, canteenId]
             );
 
@@ -50,12 +53,45 @@ export const createOrder = async (req, res) => {
 
                 return res.status(400).json({
                     success: false,
-                    message: `Menu item ${item.menuItemId} is not available`
+                    message: `Menu item '${item.menuItemId}' is not available`
                 });
             }
 
-            const basePrice = Number(menuItems[0].price);
+            const menuItem = menuItems[0];
             const quantity = Number(item.quantity);
+
+            // Server-authoritative stock check
+            if (menuItem.is_tracked && menuItem.stock_quantity < quantity) {
+                await connection.rollback();
+
+                return res.status(400).json({
+                    success: false,
+                    message: `Insufficient stock for '${menuItem.name}'. Requested: ${quantity}, Available: ${menuItem.stock_quantity}`,
+                    availableStock: menuItem.stock_quantity
+                });
+            }
+
+            // Atomic decrement tracked stock
+            if (menuItem.is_tracked) {
+                const [decrementResult] = await connection.query(
+                    `UPDATE menu_items
+                     SET stock_quantity = stock_quantity - ?,
+                         is_available = CASE WHEN stock_quantity - ? <= 0 THEN 0 ELSE is_available END
+                     WHERE id = ? AND stock_quantity >= ?`,
+                    [quantity, quantity, item.menuItemId, quantity]
+                );
+
+                if (decrementResult.affectedRows === 0) {
+                    await connection.rollback();
+
+                    return res.status(400).json({
+                        success: false,
+                        message: `Stock for '${menuItem.name}' was depleted concurrently. Please try again.`
+                    });
+                }
+            }
+
+            const basePrice = Number(menuItem.price);
             const extraAmount = Math.max(0, Number(item.extraAmount || 0));
 
             if (extraAmount > 100) {
@@ -73,6 +109,7 @@ export const createOrder = async (req, res) => {
 
             orderItems.push({
                 menuItemId: item.menuItemId,
+                name: menuItem.name,
                 quantity,
                 price: unitPrice,
                 extraAmount,
@@ -235,7 +272,7 @@ export const createOrder = async (req, res) => {
                 );
 
                 if (createdOrders.length > 0) {
-                    io.emit("newOrderCreated", {
+                    io.to(`canteen_${canteenId}`).emit("newOrderCreated", {
                         ...createdOrders[0],
                         items: orderItems
                     });
@@ -468,7 +505,7 @@ export const cancelOrder = async (req, res) => {
                 orderId: Number(id),
                 status: "cancelled"
             });
-            io.emit("orderStatusUpdated", {
+            io.to(`canteen_${order.canteen_id}`).emit("orderStatusUpdated", {
                 orderId: Number(id),
                 status: "cancelled"
             });

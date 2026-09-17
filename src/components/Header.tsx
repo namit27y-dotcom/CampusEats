@@ -83,8 +83,17 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
           </span>
         </div>
 
-        {/* Demo Auto-progression toggle */}
+        {/* Environment Mode Badge & Demo Auto-progression toggle */}
         <div className="flex items-center gap-2 shrink-0">
+          {import.meta.env.VITE_USE_MOCK === 'true' ? (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              ● MOCK MODE ACTIVE
+            </span>
+          ) : (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              ● LIVE BACKEND
+            </span>
+          )}
           <label className="flex items-center gap-1.5 text-[11px] sm:text-xs text-zinc-300 cursor-pointer select-none">
             <input
               type="checkbox"

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Order, OrderStatus } from '../../types';
 import { QRCodeView } from '../common/QRCodeView';
+import { downloadOrderInvoice } from '../../utils/invoiceDownload';
 import {
   X,
   CheckCircle2,
@@ -16,6 +17,7 @@ import {
   Ban,
   ChefHat,
   ShoppingBag,
+  FileText,
 } from 'lucide-react';
 
 interface OrderTrackingModalProps {
@@ -319,7 +321,15 @@ export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
         </div>
 
         {/* Footer actions */}
-        <div className="p-4 border-t border-zinc-100 bg-zinc-50 rounded-b-3xl flex gap-2">
+        <div className="p-4 border-t border-zinc-100 bg-zinc-50 rounded-b-3xl flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <button
+            onClick={() => downloadOrderInvoice(order.id, order.tokenNumber)}
+            className="py-2.5 px-3 rounded-xl border border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-100 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+          >
+            <FileText className="w-3.5 h-3.5 text-orange-600" />
+            <span>Invoice PDF</span>
+          </button>
+
           {canCancel && (
             <button
               onClick={() => {
@@ -327,7 +337,7 @@ export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
                   cancelOrder(order.id);
                 }
               }}
-              className="py-2 px-3 rounded-xl border border-rose-200 bg-white text-rose-700 text-xs font-bold hover:bg-rose-50 transition"
+              className="py-2.5 px-3 rounded-xl border border-rose-200 bg-white text-rose-700 text-xs font-bold hover:bg-rose-50 transition"
             >
               Cancel Order
             </button>

@@ -5,8 +5,14 @@ import { defineConfig } from 'vite';
 import { mockApiPlugin } from './src/server/mockApiPlugin';
 
 export default defineConfig(() => {
+  const isMockEnabled = process.env.VITE_USE_MOCK === 'true';
+
   return {
-    plugins: [react(), tailwindcss(), mockApiPlugin()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      ...(isMockEnabled ? [mockApiPlugin()] : [])
+    ],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

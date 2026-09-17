@@ -47,15 +47,43 @@ export const AdminPanel: React.FC = () => {
   const [formCategory, setFormCategory] = useState<FoodCategory>('snacks');
   const [formPrepTime, setFormPrepTime] = useState('8');
   const [formIsVeg, setFormIsVeg] = useState(true);
-  const [formStock, setFormStock] = useState('30');
-  const [formImage, setFormImage] = useState('');
+  const [backendStats, setBackendStats] = useState<any>(null);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
 
-  // Key stats calculation
-  const totalRevenue = orders.reduce((acc, curr) => acc + (curr.paymentStatus === 'PAID' ? curr.total : 0), 42850);
-  const totalOrdersCount = orders.length + 480;
-  const pendingOrders = orders.filter((o) => o.status === 'CONFIRMED' || o.status === 'ACCEPTED').length + 8;
-  const preparingOrders = orders.filter((o) => o.status === 'PREPARING').length + 5;
-  const readyOrders = orders.filter((o) => o.status === 'READY').length + 3;
+  // Fetch real analytics from backend when mounted
+  React.useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+        const res = await fetch(`${apiBase}/admin/stats`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success) {
+            setBackendStats(json.stats);
+          }
+        }
+      } catch (err) {
+        // Gracefully use orders state
+      }
+    };
+    fetchStats();
+  }, [orders]);
+
+  // Real key stats calculation (NO hardcoded fake offsets)
+  const totalRevenue = backendStats?.totalRevenue !== undefined 
+    ? backendStats.totalRevenue 
+    : orders.reduce((acc, curr) => acc + (curr.status !== 'CANCELLED' ? curr.total : 0), 0);
+  
+  const totalOrdersCount = backendStats?.totalOrders !== undefined
+    ? backendStats.totalOrders
+    : orders.length;
+
+  const pendingOrders = orders.filter((o) => o.status === 'CONFIRMED' || o.status === 'ACCEPTED').length;
+  const preparingOrders = orders.filter((o) => o.status === 'PREPARING').length;
+  const readyOrders = orders.filter((o) => o.status === 'READY').length;
 
   const handleOpenAddModal = (item?: MenuItem) => {
     if (item) {

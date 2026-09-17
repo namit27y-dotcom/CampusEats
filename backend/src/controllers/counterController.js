@@ -87,9 +87,10 @@ export const getCounterOrders = async (req, res) => {
 export const markOrderCollected = async (req, res) => {
     try {
         const { id } = req.params;
+        const { canteenId } = req.body;
 
         const [orders] = await pool.query(
-            "SELECT id, status FROM orders WHERE id = ?",
+            "SELECT id, token_number, canteen_id, user_id, status FROM orders WHERE id = ?",
             [id]
         );
 
@@ -100,20 +101,59 @@ export const markOrderCollected = async (req, res) => {
             });
         }
 
-        await pool.query(
+        const order = orders[0];
+        const user = req.user;
+        const staffCanteenId = user?.canteen_id || req.headers["x-canteen-id"] || canteenId;
+
+        // Mandatory server-side canteen authorization for counter staff
+        if (user?.role === "counter" && staffCanteenId) {
+            if (Number(order.canteen_id) !== Number(staffCanteenId)) {
+                return res.status(403).json({
+                    success: false,
+                    message: `Unauthorized: Counter staff is not authorized to collect orders for Canteen #${order.canteen_id} (Assigned: Canteen #${staffCanteenId})`
+                });
+            }
+        }
+
+        // Prevent double collection
+        if (order.status === "completed") {
+            return res.status(400).json({
+                success: false,
+                message: `Token #${order.token_number} has already been collected and completed.`
+            });
+        }
+
+        // Must be in 'ready' status to collect
+        if (order.status !== "ready") {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot collect order #${order.id} with status '${order.status}'. Food must be marked 'ready' by kitchen first.`
+            });
+        }
+
+        // Atomic update to avoid race conditions
+        const [result] = await pool.query(
             `UPDATE orders
              SET status = 'completed'
-             WHERE id = ?`,
+             WHERE id = ? AND status = 'ready'`,
             [id]
         );
 
+        if (result.affectedRows === 0) {
+            return res.status(409).json({
+                success: false,
+                message: "Order could not be collected. It may have already been collected concurrently or is no longer ready."
+            });
+        }
+
         const io = req.app.get("io");
         if (io) {
+            // Scoped emissions only - no unauthenticated global broadcasts
             io.to(`order_${id}`).emit("orderStatusUpdated", {
                 orderId: Number(id),
                 status: "completed"
             });
-            io.emit("orderStatusUpdated", {
+            io.to(`canteen_${order.canteen_id}`).emit("orderStatusUpdated", {
                 orderId: Number(id),
                 status: "completed"
             });
@@ -121,8 +161,9 @@ export const markOrderCollected = async (req, res) => {
 
         res.json({
             success: true,
-            message: "Order marked as completed/collected",
+            message: `Token #${order.token_number} verified and marked as collected/completed`,
             orderId: Number(id),
+            tokenNumber: order.token_number,
             status: "completed"
         });
 

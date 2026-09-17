@@ -10,8 +10,9 @@
 [![Express.js](https://img.shields.io/badge/Express.js-5.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-010101?logo=socket.io&logoColor=white)](https://socket.io/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
-> **CampusEats** is a full-stack smart canteen management platform that replaces traditional cafeteria queues with digital pre-orders, digital tokens, online payment tracking, real-time kitchen updates, and organized pickup.
+> **CampusEats** is a production-hardened full-stack smart canteen pre-ordering platform. It replaces cafeteria queues with digital pre-orders, server-authoritative inventory, Razorpay payment processing (Test Mode), PDF invoices with verification QR codes, AI-assisted meal recommendations, and authenticated real-time Kitchen & Pickup Display Systems.
 >
 > 🌐 **Live Application:** [campus-eats-ruby.vercel.app](https://campus-eats-ruby.vercel.app/)  
 > 📁 **GitHub Repository:** [github.com/namit27y-dotcom/CampusEats](https://github.com/namit27y-dotcom/CampusEats)
@@ -20,993 +21,310 @@
 
 ## 📖 Table of Contents
 
-* [Overview](#-overview)
-* [Problem Statement](#-problem-statement)
-* [Key Features](#-key-features)
-* [User Roles](#-user-roles)
+* [Overview & Architecture](#-overview--architecture)
+* [System Security & Hardening](#-system-security--hardening)
+* [Key Features by Role](#-key-features-by-role)
 * [Technology Stack](#-technology-stack)
-* [System Architecture](#-system-architecture)
-* [Project Structure](#-project-structure)
-* [Database Design](#-database-design)
-* [Authentication & Security](#-authentication--security)
-* [Order Lifecycle](#-order-lifecycle)
-* [Payment & Wallet](#-payment--wallet)
-* [Real-Time Communication](#-real-time-communication)
-* [API Overview](#-api-overview)
-* [Installation](#-installation)
+* [Database Design & Migrations](#-database-design--migrations)
+* [Order Lifecycle State Machine](#-order-lifecycle-state-machine)
+* [Payment & Razorpay Test Mode](#-payment--razorpay-test-mode)
+* [PDF Invoice & Safe QR Verification](#-pdf-invoice--safe-qr-verification)
+* [AI Assistant & Smart Recommendations](#-ai-assistant--smart-recommendations)
+* [Real-Time WebSocket Layer](#-real-time-websocket-layer)
+* [API Reference](#-api-reference)
 * [Environment Configuration](#-environment-configuration)
-* [Running the Application](#-running-the-application)
-* [Testing](#-testing)
-* [End-to-End Workflow](#-end-to-end-workflow)
-* [Future Improvements](#-future-improvements)
-* [Project Status](#-project-status)
+* [Local Setup & Docker](#-local-setup--docker)
+* [Automated Test Suite (77 Assertions)](#-automated-test-suite-77-assertions)
+* [Production Deployment Guide](#-production-deployment-guide)
 * [License](#-license)
 
 ---
 
-# 🚀 Overview
+# 🚀 Overview & Architecture
 
-CampusEats is designed for college and university campuses where students often face long queues during breaks.
-
-Instead of waiting at the canteen counter, students can:
-
-1. Browse the available menu.
-2. Add food items to their cart.
-3. Customize items where supported.
-4. Select a payment method.
-5. Place an order.
-6. Receive a digital token.
-7. Track the order in real time.
-8. Collect the food when the order is ready.
-9. Rate the completed order.
-
-At the same time, kitchen staff receive and process orders through a dedicated Kitchen Display System, while counter staff handle final food collection.
-
-Administrators can monitor the system and manage menu and user-related operations.
-
----
-
-# 🎯 Problem Statement
-
-Traditional college canteen systems commonly involve:
-
-* Long queues during break periods.
-* Manual order management.
-* Physical tokens.
-* Difficulty tracking order status.
-* Repeated communication between students and kitchen staff.
-* Limited visibility into canteen operations.
-* Manual handling of refunds and order records.
-
-CampusEats addresses these problems through a centralized digital ordering and management platform.
-
-### Traditional Flow
+CampusEats solves campus cafeteria congestion through a unified digital pipeline:
 
 ```text
-Student
-   ↓
-Physical Queue
-   ↓
-Place Order
-   ↓
-Wait
-   ↓
-Ask for Status
-   ↓
-Collect Food
-```
-
-### CampusEats Flow
-
-```text
-Student
-   ↓
-Browse Menu
-   ↓
-Pre-Order
-   ↓
-Digital Payment
-   ↓
-Digital Token
-   ↓
-Real-Time Tracking
-   ↓
-Food Ready
-   ↓
-Pickup Counter
+Student App (React 19 + Vite) ───[ HTTPS / Bearer JWT ]───► Express 5 API (Helmet + Rate Limits)
+         │                                                            │
+         │                                              ┌─────────────┴─────────────┐
+         ▼                                              ▼                           ▼
+Socket.IO Client (JWT Handshake) ──[ WebSocket ]──► Socket.IO Rooms        MySQL 8.0 Engine
+         │                                         (order_*, canteen_*)   (Transactions & Locks)
+         ▼                                              ▲                           ▲
+Kitchen & Pickup Display                                └─────── Gemini AI / PDF ───┘
 ```
 
 ---
 
-# ✨ Key Features
+# 🔐 System Security & Hardening
+
+* **Password Security**: Enforced 8+ characters, at least 1 number, at least 1 special character via `bcryptjs`.
+* **Registration Privilege Hardening**: Public registration endpoint strictly forces the `student` role. Staff roles (`kitchen`, `counter`, `admin`) are restricted to administrative provisioning.
+* **Brute-Force Protection**: Express rate limiting protects `/api/auth/login` and `/api/auth/register` (10 requests per 15 minutes per IP). General API is limited to 500 requests per 15 minutes.
+* **Server-Authoritative Pricing & Stock**: Cart prices sent from the client are completely disregarded. Total amounts, item availability, and stock balances are calculated and decremented server-side with database row-level locking (`FOR UPDATE`).
+* **Socket.IO Room Authorization**: WebSocket connections require a JWT handshake. Students are strictly restricted to listening to their own `order_<id>` rooms. Staff are isolated to their authorized `canteen_<id>` rooms. Sensitive global events are blocked.
+* **Security Headers**: Production-ready security headers implemented via `helmet`.
+
+---
+
+# ✨ Key Features by Role
 
 ### 👨‍🎓 Student
+* Authenticated registration and JWT session management.
+* Live canteen browsing with dietary tags (Veg/Non-Veg, Prep times).
+* **AI Meal Assistant**: Natural language dietary and budget recommendations powered by Google Gemini (with DB validation).
+* Customizable cart with server-side inventory validation.
+* **Razorpay Test-Mode Checkout** & Campus Wallet balance payments with transactional consistency.
+* Real-time order tracking modal with live status indicators and elapsed timers.
+* **PDF Invoice / Receipt Download**: Itemized PDF receipts with safe verification QR codes.
+* Order history and interactive rating submissions.
 
-* Secure login and registration
-* Browse available canteens
-* Browse live menu
-* Add/remove cart items
-* Food customization
-* Automatic order total calculation
-* Digital token generation
-* Wallet payments
-* UPI/Card/Cash demo payment modes
-* Order history
-* Real-time order tracking
-* Order cancellation where permitted
-* Wallet refund for eligible cancellations
-* Wallet transaction history
-* Ratings and reviews for completed orders
+### 👨‍🍳 Kitchen Staff
+* Dedicated Kitchen Display System (KDS).
+* Live incoming order queue with audio/visual alerts.
+* State transitions: `placed` ➔ `accepted` ➔ `preparing` ➔ `ready`.
+* Real-time multi-client synchronization via Socket.IO.
 
-### 👨‍🍳 Kitchen
-
-* Dedicated Kitchen Display System
-* View active incoming orders
-* View student/order information
-* View food items and customization details
-* Accept orders
-* Move orders to preparation
-* Mark orders as ready
-* Call digital tokens
-* Real-time order updates
-
-### 🧾 Counter
-
-* Dedicated pickup interface
-* View ready orders
-* Search orders using token numbers
-* Verify orders
-* Mark orders as collected
+### 🧾 Counter Staff
+* Dedicated Pickup Verification Dashboard.
+* Search and verify digital tokens with canteen-level authorization.
+* Atomic completion: Transition `ready` ➔ `completed` (`COLLECTED`).
+* Prevents re-collection or unauthorized canteen pickup.
 
 ### 👨‍💼 Administrator
-
-* Dashboard statistics
-* View campus users
-* View orders
-* Menu management
-* Add menu items
-* Update menu items
-* Toggle menu availability
-* Monitor overall canteen activity
-
----
-
-# 👥 User Roles
-
-| Role                    | Responsibilities                              |
-| ----------------------- | --------------------------------------------- |
-| 👨‍🎓 **Student**       | Browse, customize, order, pay, track and rate |
-| 👨‍🍳 **Kitchen Staff** | Manage incoming orders and food preparation   |
-| 🧾 **Counter Staff**    | Handle ready orders and customer pickup       |
-| 👨‍💼 **Administrator** | Manage users, menu and system operations      |
-
-Role-based authorization prevents users from accessing APIs outside their assigned responsibilities.
+* Real database aggregated metrics (no hardcoded baselines): total revenue, live orders, active users, top-selling items, revenue charts.
+* Menu item management with stock quantity controls and tracking toggles.
+* User account oversight and role inspection.
 
 ---
 
 # 🛠️ Technology Stack
 
-## Frontend
-
-* **React 19**
-* **TypeScript**
-* **Vite**
-* **Tailwind CSS**
-* **React Context API**
-* **Lucide React**
-* **Fetch API**
-* **Socket.IO Client**
-
-## Backend
-
-* **Node.js**
-* **Express.js**
-* **MySQL**
-* **mysql2**
-* **JWT**
-* **bcryptjs**
-* **Socket.IO**
-* **CORS**
-* **dotenv**
-
-## Development
-
-* Git
-* GitHub
-* VS Code
-* npm
+| Layer | Technologies |
+|---|---|
+| **Frontend** | React 19, TypeScript 5.8, Vite 6.4, Tailwind CSS v4, Lucide React, Socket.IO Client |
+| **Backend** | Node.js 20+, Express.js 5.x, MySQL2, JWT, bcryptjs, Helmet, Express-Rate-Limit, Socket.IO 4.x |
+| **Payments** | Razorpay SDK (Test Mode Integration with HMAC-SHA256 verification) |
+| **Documents** | PDFKit (Streaming PDF Invoices), QRCode (Safe Token Verification Links) |
+| **AI Integration**| Google GenAI SDK (`@google/genai` Gemini 2.5 Flash) with fallback grounding |
+| **Container** | Docker, Docker Compose, Alpine Linux |
 
 ---
 
-# 🏗️ System Architecture
+# 🗄️ Database Design & Migrations
 
-```text
-                         CAMPUS EATS
-                              │
-             ┌────────────────┴────────────────┐
-             │                                 │
-             ▼                                 ▼
-     ┌─────────────────┐              ┌─────────────────┐
-     │ React Frontend  │              │ Socket.IO       │
-     │ Vite + TS       │◄────────────►│ Real-Time Layer │
-     └────────┬────────┘              └────────┬────────┘
-              │                                │
-              │ REST API                       │
-              │ Bearer JWT                     │
-              ▼                                │
-     ┌─────────────────────────────────────────┐
-     │          Express.js Backend             │
-     │                                         │
-     │  Authentication                         │
-     │  Authorization                          │
-     │  Orders                                 │
-     │  Menu                                   │
-     │  Wallet                                 │
-     │  Kitchen                                │
-     │  Counter                                │
-     │  Ratings                                │
-     │  Admin                                  │
-     └──────────────────┬──────────────────────┘
-                        │
-                        │ mysql2
-                        ▼
-              ┌────────────────────┐
-              │    MySQL 8.0       │
-              │ campuseats_db      │
-              └────────────────────┘
-```
-
----
-
-# 📂 Project Structure
-
-```text
-CampusEats/
-│
-├── backend/
-│   ├── src/
-│   │   ├── config/
-│   │   │   └── db.js
-│   │   │
-│   │   ├── controllers/
-│   │   │   ├── adminController.js
-│   │   │   ├── authController.js
-│   │   │   ├── canteenController.js
-│   │   │   ├── counterController.js
-│   │   │   ├── kitchenController.js
-│   │   │   ├── menuController.js
-│   │   │   ├── orderController.js
-│   │   │   ├── ratingController.js
-│   │   │   └── walletController.js
-│   │   │
-│   │   ├── middleware/
-│   │   │   ├── authMiddleware.js
-│   │   │   └── roleMiddleware.js
-│   │   │
-│   │   ├── routes/
-│   │   │   ├── adminRoutes.js
-│   │   │   ├── authRoutes.js
-│   │   │   ├── canteenRoutes.js
-│   │   │   ├── counterRoutes.js
-│   │   │   ├── kitchenRoutes.js
-│   │   │   ├── menuRoutes.js
-│   │   │   ├── orderRoutes.js
-│   │   │   ├── ratingRoutes.js
-│   │   │   └── walletRoutes.js
-│   │   │
-│   │   └── server.js
-│   │
-│   ├── .env
-│   ├── .gitignore
-│   ├── package.json
-│   └── package-lock.json
-│
-├── src/
-│   ├── components/
-│   │   ├── admin/
-│   │   ├── common/
-│   │   ├── counter/
-│   │   ├── kitchen/
-│   │   └── student/
-│   │
-│   ├── context/
-│   │   └── AppContext.tsx
-│   │
-│   ├── pages/
-│   │   ├── LoginPage.tsx
-│   │   ├── StudentPage.tsx
-│   │   ├── KitchenPage.tsx
-│   │   ├── CounterPage.tsx
-│   │   └── AdminPage.tsx
-│   │
-│   ├── types/
-│   ├── utils/
-│   │   └── api.ts
-│   ├── App.tsx
-│   ├── index.css
-│   └── main.tsx
-│
-├── .gitignore
-├── package.json
-├── package-lock.json
-├── vite.config.ts
-└── README.md
-```
-
----
-
-# 🗄️ Database Design
-
-The backend uses a MySQL database named:
-
-```text
-campuseats_db
-```
+The application runs on MySQL 8.0 with transactional engines (`InnoDB`).
 
 ### Main Tables
+* `users` — id, name, email, password, role (`student`, `kitchen`, `counter`, `admin`), canteen_id, created_at.
+* `canteens` — id, name, location, is_active, created_at.
+* `menu_items` — id, canteen_id, name, description, price, category, is_veg, is_available, stock_quantity, is_tracked, prep_time.
+* `orders` — id, user_id, canteen_id, total_amount, token_number, status, payment_method, payment_status, payment_transaction_id, razorpay_order_id, razorpay_payment_id, razorpay_signature, created_at.
+* `order_items` — id, order_id, menu_item_id, quantity, price, customization, extra_amount.
+* `wallet_transactions` — id, user_id, amount, transaction_type, order_id, balance_after, created_at.
+* `ratings` — id, order_id, user_id, rating, comment, created_at.
 
-| Table                 | Purpose                                             |
-| --------------------- | --------------------------------------------------- |
-| `users`               | Stores student, kitchen, counter and admin accounts |
-| `canteens`            | Stores canteen information                          |
-| `menu_items`          | Stores food items and availability                  |
-| `orders`              | Stores orders, tokens and payment information       |
-| `order_items`         | Stores individual items in an order                 |
-| `wallet_transactions` | Stores wallet credits and debits                    |
-| `ratings`             | Stores order ratings and reviews                    |
-
-### Important Order Fields
-
-```text
-id
-user_id
-canteen_id
-total_amount
-token_number
-status
-payment_method
-payment_status
-payment_transaction_id
-created_at
-```
-
-### Order Status
-
-```text
-placed
-   ↓
-accepted
-   ↓
-preparing
-   ↓
-ready
-   ↓
-completed
-```
-
-Cancellation is supported before the order reaches the restricted preparation/ready stages.
+### Migrations
+1. `backend/scripts/migration_phase2_inventory.sql`: Adds `stock_quantity` and `is_tracked` columns safely and idempotently.
+2. `backend/scripts/migration_phase3_payments.sql`: Adds `razorpay_order_id`, `razorpay_payment_id`, and `razorpay_signature` columns.
 
 ---
 
-# 🔐 Authentication & Security
+# 🎟️ Order Lifecycle State Machine
 
-CampusEats uses JWT-based authentication with role-based access control.
-
-### Authentication Flow
+Order state progression is enforced strictly server-side:
 
 ```text
-Login
-  ↓
-Email + Password Validation
-  ↓
-bcrypt Password Verification
-  ↓
-JWT Generation
-  ↓
-Frontend Stores Token
-  ↓
-Authorization: Bearer <token>
-  ↓
-JWT Middleware
-  ↓
-Role Authorization
-  ↓
-Protected API
-```
+    ┌──────────────┐
+    │    PLACED    │ ── (Created by Student, Stock decremented)
+    └──────┬───────┘
+           │
+           ▼
+    ┌──────────────┐
+    │   ACCEPTED   │ ── (Kitchen acknowledges order)
+    └──────┬───────┘
+           │
+           ▼
+    ┌──────────────┐
+    │  PREPARING   │ ── (Food preparation in progress)
+    └──────┬───────┘
+           │
+           ▼
+    ┌──────────────┐
+    │    READY     │ ── (Token called, ready at counter)
+    └──────┬───────┘
+           │
+           ▼
+    ┌──────────────┐
+    │  COMPLETED   │ ── (Counter verifies token & marks collected)
+    └──────────────┘
 
-### Security Measures
-
-* Password hashing using `bcryptjs`
-* JWT authentication
-* JWT expiry
-* Role-based authorization
-* Protected backend routes
-* Parameterized MySQL queries
-* CORS configuration
-* Environment variables for secrets
-* Database transactions for sensitive operations
-* Row locking for wallet deductions/refunds
-
-> Never commit `.env`, passwords, JWT secrets or access tokens to GitHub.
-
----
-
-# 🎟️ Order Lifecycle
-
-CampusEats uses a structured order state machine.
-
-```text
-             ┌──────────────┐
-             │    PLACED    │
-             └──────┬───────┘
-                    ↓
-             ┌──────────────┐
-             │   ACCEPTED   │
-             └──────┬───────┘
-                    ↓
-             ┌──────────────┐
-             │  PREPARING  │
-             └──────┬───────┘
-                    ↓
-             ┌──────────────┐
-             │    READY     │
-             └──────┬───────┘
-                    ↓
-             ┌──────────────┐
-             │  COMPLETED   │
-             └──────────────┘
-
-Cancellation
-     ↓
-CANCELLED
-```
-
-The frontend maps these backend statuses to its UI statuses:
-
-```text
-placed     → CONFIRMED
-accepted   → ACCEPTED
-preparing  → PREPARING
-ready      → READY
-completed  → COLLECTED
-cancelled  → CANCELLED
+* Cancellation: Allowed only in `placed` or `accepted` stage (restores stock & refunds wallet).
 ```
 
 ---
 
-# 💳 Payment & Wallet
+# 💳 Payment & Razorpay Test Mode
 
-CampusEats supports:
+> [!NOTE]
+> **Razorpay is currently configured in TEST MODE.** Live payments are disabled by design until production API keys are provided.
 
-* Wallet
-* UPI demo
-* Card demo
-* Cash
-
-## Wallet Payment Flow
-
-```text
-Student Places Order
-        ↓
-Calculate Total
-        ↓
-Lock Wallet Row
-        ↓
-Check Balance
-        ↓
-Deduct Amount
-        ↓
-Create Debit Transaction
-        ↓
-Mark Payment as Paid
-        ↓
-Create Order
-```
-
-Wallet operations use database transactions to prevent inconsistent balances.
-
-## Refund Flow
-
-For an eligible cancellation:
-
-```text
-Cancel Order
-     ↓
-Verify Order Owner
-     ↓
-Verify Cancellation Allowed
-     ↓
-Lock Order + Wallet
-     ↓
-Credit Wallet
-     ↓
-Create Refund Transaction
-     ↓
-Mark Order Cancelled
-```
-
-The database maintains the existing payment status values:
-
-```text
-pending
-paid
-failed
-```
-
-Refunds are represented through wallet credit transactions rather than introducing an unsupported `refunded` payment status.
+* **Order Creation (`POST /api/payment/create-order`)**: Backend re-computes total from DB menu prices and creates a Razorpay order in INR paise.
+* **Signature Verification (`POST /api/payment/verify-signature`)**: Computes `crypto.createHmac("sha256", secret)` over `order_id|payment_id` and compares securely.
+* **Duplicate Prevention**: Verified transactions cannot be reused.
+* **Wallet System**: Supports transactional balance top-up, atomic debits with `FOR UPDATE` row locking, and automated refunds on eligible cancellation.
 
 ---
 
-# 🔄 Real-Time Communication
+# 📄 PDF Invoice & Safe QR Verification
 
-Socket.IO provides real-time communication between the backend and connected clients.
-
-### New Order
-
-```text
-Student
-   ↓
-Place Order
-   ↓
-Express API
-   ↓
-MySQL
-   ↓
-Socket.IO
-   ↓
-Kitchen Dashboard
-```
-
-### Status Update
-
-```text
-Kitchen
-   ↓
-Update Status
-   ↓
-Express API
-   ↓
-Socket.IO Event
-   ↓
-Student
-   ↓
-UI Updates Instantly
-```
-
-Example events include:
-
-```text
-newOrderCreated
-orderStatusUpdated
-```
-
-This allows students and staff to receive updates without manually refreshing the page.
+* **Endpoint**: `GET /api/orders/:id/invoice`
+* **Security**: Enforces ownership check (students can only fetch their own orders; staff/admin can fetch all).
+* **Generation**: Streamed directly via `PDFKit` as `application/pdf`.
+* **Safe QR Code**: Embedded QR code contains a safe public verification URL (`https://campus-eats-ruby.vercel.app/verify?orderId=...&token=...`) with **no sensitive JWTs, secrets, or database credentials**.
 
 ---
 
-# 🔌 API Overview
+# 🤖 AI Assistant & Smart Recommendations
 
-Base API URL:
-
-```text
-http://localhost:5000/api
-```
-
-| Method | Endpoint                      | Purpose                    | Access            |
-| ------ | ----------------------------- | -------------------------- | ----------------- |
-| POST   | `/auth/register`              | Register user              | Public            |
-| POST   | `/auth/login`                 | Login                      | Public            |
-| GET    | `/auth/me`                    | Current authenticated user | Authenticated     |
-| GET    | `/canteens`                   | Get active canteens        | Public/Configured |
-| GET    | `/canteens/:id`               | Get canteen                | Public/Configured |
-| GET    | `/menu/:canteenId`            | Get canteen menu           | Authenticated     |
-| POST   | `/orders`                     | Create order               | Student           |
-| GET    | `/orders/my-orders`           | Get student orders         | Student           |
-| PATCH  | `/orders/:id/cancel`          | Cancel eligible order      | Student/Owner     |
-| GET    | `/kitchen/orders`             | Kitchen active orders      | Kitchen/Admin     |
-| PATCH  | `/kitchen/orders/:id/status`  | Update order status        | Kitchen/Admin     |
-| GET    | `/counter/orders`             | Get pickup queue           | Counter/Admin     |
-| PATCH  | `/counter/orders/:id/collect` | Collect order              | Counter/Admin     |
-| GET    | `/wallet/balance`             | Get wallet balance         | Authenticated     |
-| POST   | `/wallet/add-money`           | Add wallet money           | Authenticated     |
-| GET    | `/wallet/transactions`        | Wallet history             | Authenticated     |
-| POST   | `/ratings`                    | Submit rating              | Student/Owner     |
-| GET    | `/ratings/:orderId`           | Get rating                 | Authenticated     |
-| GET    | `/admin/stats`                | Dashboard statistics       | Admin             |
-| GET    | `/admin/users`                | View users                 | Admin             |
-| GET    | `/admin/orders`               | View global orders         | Admin             |
+* **Endpoint**: `POST /api/ai/recommend` (Protected by JWT and rate limited to 30 req/15min).
+* **Grounding**: Queries current available menu items directly from the database and injects them as grounding context into the Gemini prompt.
+* **Validation Filter**: Discards any hallucinated menu items that do not exist in the database or violate dietary constraints.
+* **Fallback Engine**: If AI is offline, seamlessly falls back to a deterministic rule-based dietary/budget matching engine.
 
 ---
 
-# ⚙️ Installation
+# 🔌 API Reference
 
-## Prerequisites
+Base API URL: `http://localhost:5000/api`
 
-Install the following:
-
-* Node.js 18+
-* npm
-* MySQL 8+
-* Git
-* VS Code
-
----
-
-## 1. Clone Repository
-
-```bash
-git clone https://github.com/namit27y-dotcom/CampusEats.git
-cd CampusEats
-```
-
----
-
-## 2. Install Frontend Dependencies
-
-From the project root:
-
-```bash
-npm install
-```
-
----
-
-## 3. Install Backend Dependencies
-
-```bash
-cd backend
-npm install
-cd ..
-```
+| Endpoint | Method | Role | Description |
+|---|---|---|---|
+| `/auth/register` | `POST` | Public | Register student account (enforces complexity & role) |
+| `/auth/login` | `POST` | Public | Login and receive Bearer JWT token |
+| `/auth/me` | `GET` | Authenticated | Get current user profile and role |
+| `/canteens` | `GET` | Authenticated | List all active campus canteens |
+| `/menu/:canteenId` | `GET` | Authenticated | Get menu items with availability & stock |
+| `/menu/:id/stock` | `PATCH` | Admin | Update item stock quantity & tracking toggle |
+| `/orders` | `POST` | Student | Place order with server-authoritative stock deduction |
+| `/orders/my-orders` | `GET` | Student | Retrieve user order history |
+| `/orders/:id/invoice` | `GET` | Student/Staff | Download itemized PDF receipt with QR code |
+| `/payment/create-order`| `POST` | Student | Create Razorpay test-mode payment order |
+| `/payment/verify-signature`| `POST`| Student | Verify Razorpay payment signature & update order |
+| `/ai/recommend` | `POST` | Student | Get AI-grounded meal recommendations |
+| `/kitchen/orders` | `GET` | Kitchen/Admin | List active kitchen orders |
+| `/kitchen/orders/:id/status`| `PATCH`| Kitchen/Admin| Transition order state |
+| `/counter/orders` | `GET` | Counter/Admin | List ready pickup queue |
+| `/counter/orders/:id/collect`| `PATCH`| Counter/Admin| Verify token and mark collected |
+| `/admin/stats` | `GET` | Admin | Aggregate real database analytics |
+| `/health` | `GET` | Public | Service health & database connectivity check |
 
 ---
 
 # 🔧 Environment Configuration
 
-Create:
-
-```text
-backend/.env
+### Frontend (`.env`)
+```env
+VITE_API_URL=http://localhost:5000/api
+VITE_WS_URL=http://localhost:5000
+VITE_USE_MOCK=false
 ```
 
-Use your own local credentials:
-
+### Backend (`backend/.env`)
 ```env
 PORT=5000
-
 DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=YOUR_MYSQL_PASSWORD
-DB_NAME=campuseats_db
 DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+DB_NAME=campuseats
+JWT_SECRET=your_super_secret_jwt_key
+CLIENT_URL=http://localhost:5173
 
-JWT_SECRET=YOUR_SECRET_KEY
-CORS_ORIGIN=http://localhost:5173
-```
+# Payment Gateway (Razorpay Test Mode)
+RAZORPAY_KEY_ID=rzp_test_your_key_id
+RAZORPAY_KEY_SECRET=your_test_secret
 
-### Important
-
-Do **not** upload `.env` to GitHub.
-
-The repository already uses `.gitignore` to prevent environment files and local test credentials from being committed.
-
----
-
-# 🗃️ Database Setup
-
-Create the database:
-
-```sql
-CREATE DATABASE IF NOT EXISTS campuseats_db;
-```
-
-Then create the required CampusEats tables.
-
-The application expects MySQL to be running on the configured port, normally:
-
-```text
-3306
+# AI Assistant (Google Gemini)
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
 ---
 
-# ▶️ Running the Application
+# ⚙️ Local Setup & Docker
 
-CampusEats uses separate frontend and backend development servers.
-
-## Terminal 1 — Backend
-
+### Option 1: Docker Compose (Recommended for full-stack)
 ```bash
+# Start MySQL & Backend in containers
+docker-compose up -d
+
+# Start Frontend
+npm install
+npm run dev
+```
+
+### Option 2: Standard Node.js
+```bash
+# 1. Start Backend
 cd backend
+npm install
+npm run dev
+
+# 2. Start Frontend (in separate terminal)
+cd ..
+npm install
 npm run dev
 ```
 
-Backend:
-
-```text
-http://localhost:5000
-```
-
-### Health Check
-
-Open:
-
-```text
-http://localhost:5000/api/health
-```
-
-Expected response:
-
-```json
-{
-  "success": true,
-  "status": "OK",
-  "database": "Connected"
-}
-```
-
 ---
 
-## Terminal 2 — Frontend
+# 🧪 Automated Test Suite (77 Assertions)
 
-From the project root:
+The repository includes a comprehensive 4-suite automated test harness verifying all security, business logic, payment, and AI pipelines:
 
 ```bash
-npm run dev
+# Phase 1: Security & Validation (30 tests)
+node backend/scripts/testPhase1Security.js
+
+# Phase 2: Inventory & Real Analytics (17 tests)
+node backend/scripts/testPhase2.js
+
+# Phase 3A: Razorpay & PDF Invoices (14 tests)
+node backend/scripts/testPhase3Payments.js
+
+# Phase 3B: Gemini AI & Complete Flow (16 tests)
+node backend/scripts/testPhase3BAiAndFlow.js
 ```
 
-Frontend:
-
-```text
-http://localhost:5173
-```
-
-Open:
-
-```text
-http://localhost:5173
-```
+**Total Test Coverage: 77/77 assertions passing (0 failures).**
 
 ---
 
-# 🧪 Testing
+# 🚢 Production Deployment Guide
 
-## Frontend Build
+### 1. Frontend (Vercel)
+* **Framework Preset**: Vite
+* **Build Command**: `npm run build`
+* **Output Directory**: `dist`
+* **Environment Variables**:
+  * `VITE_API_URL`: `https://your-backend-api.onrender.com/api`
+  * `VITE_WS_URL`: `https://your-backend-api.onrender.com`
+  * `VITE_USE_MOCK`: `false`
 
-```bash
-npm run build
-```
+### 2. Backend (Render / Railway)
+* **Runtime**: Node.js 20+
+* **Root Directory**: `backend`
+* **Build Command**: `npm install`
+* **Start Command**: `npm start`
+* **Health Check Path**: `/api/health`
+* **Environment Variables**: `PORT`, `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`, `JWT_SECRET`, `CLIENT_URL`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `GEMINI_API_KEY`.
 
-## TypeScript Check
-
-```bash
-npx tsc --noEmit
-```
-
-A successful production build should complete without compilation errors.
-
----
-
-# 🔁 End-to-End Workflow
-
-A complete CampusEats test can follow this sequence:
-
-### 1. Student
-
-```text
-Login
- ↓
-Browse Menu
- ↓
-Add Items
- ↓
-Customize Item
- ↓
-Checkout
- ↓
-Select Payment
- ↓
-Place Order
- ↓
-Receive Token
-```
-
-### 2. Kitchen
-
-```text
-Login as Kitchen
- ↓
-Receive New Order
- ↓
-Accept
- ↓
-Start Preparing
- ↓
-Mark Ready
-```
-
-### 3. Student
-
-```text
-Receive Real-Time READY Update
- ↓
-Go to Pickup Counter
-```
-
-### 4. Counter
-
-```text
-Login as Counter
- ↓
-Find Token
- ↓
-Verify Order
- ↓
-Mark Collected
-```
-
-### 5. Student
-
-```text
-Order Completed
- ↓
-Submit Rating & Review
-```
-
----
-
-# 📱 Responsive Design
-
-The frontend is designed for:
-
-* 📱 Mobile devices
-* 📟 Tablets
-* 💻 Laptops
-* 🖥️ Desktop screens
-
-The interface is optimized for responsive layouts while maintaining the application's core visual design and user experience.
-
----
-
-# 📊 Core System Benefits
-
-### For Students
-
-* Less waiting
-* Digital ordering
-* Easy payment
-* Live status tracking
-* Digital token
-* Convenient pickup
-
-### For Kitchen Staff
-
-* Organized queue
-* Clear order details
-* Customization visibility
-* Real-time order management
-
-### For Counter Staff
-
-* Token-based pickup
-* Faster verification
-* Reduced confusion
-
-### For Administrators
-
-* Centralized management
-* User visibility
-* Menu control
-* Operational statistics
-
----
-
-# 🔮 Future Improvements
-
-Possible future enhancements include:
-
-* 🤖 AI-powered food recommendations
-* 📈 Machine-learning demand prediction
-* 📊 Advanced sales analytics
-* 📱 Native mobile application
-* 🔔 Push notifications
-* 💳 Production Razorpay/Stripe integration
-* 📍 Multi-campus support
-* 📦 Inventory forecasting
-* 🧾 Digital receipts
-* 🥗 Personalized nutrition recommendations
-* 🔐 Additional production security controls
-
----
-
-# 📌 Project Status
-
-**CampusEats is currently a functional full-stack project/prototype.**
-
-### Implemented
-
-* ✅ React frontend
-* ✅ TypeScript
-* ✅ Responsive UI
-* ✅ Express.js backend
-* ✅ MySQL database
-* ✅ JWT authentication
-* ✅ bcrypt password hashing
-* ✅ Role-based authorization
-* ✅ Canteen APIs
-* ✅ Menu APIs
-* ✅ Student ordering
-* ✅ Digital token generation
-* ✅ Food customization
-* ✅ Wallet system
-* ✅ Payment tracking
-* ✅ Order cancellation
-* ✅ Wallet refunds
-* ✅ Kitchen Display System
-* ✅ Counter pickup system
-* ✅ Socket.IO real-time updates
-* ✅ Ratings and reviews
-* ✅ Admin functionality
-
----
-
-# 🔒 Production Considerations
-
-Before deploying CampusEats to a production environment:
-
-* Use strong production secrets.
-* Use HTTPS.
-* Use a production MySQL instance.
-* Configure restricted CORS origins.
-* Add API rate limiting.
-* Add stronger request validation.
-* Integrate a real payment gateway.
-* Use secure production environment variables.
-* Rotate all development credentials.
-* Configure production logging and monitoring.
-
----
-
-# 🤝 Contributing
-
-Contributions are welcome.
-
-Recommended workflow:
-
-```text
-Fork / Clone
-    ↓
-Create Feature Branch
-    ↓
-Make Changes
-    ↓
-Test
-    ↓
-Commit
-    ↓
-Push Branch
-    ↓
-Create Pull Request
-```
-
-Please avoid directly modifying the main branch when working collaboratively.
+### 3. Database (Aiven / PlanetScale / AWS RDS MySQL)
+* Run `backend/scripts/migration_phase2_inventory.sql` and `backend/scripts/migration_phase3_payments.sql`.
 
 ---
 
 # 📄 License
 
-This project is intended for educational, academic, portfolio, and demonstration purposes.
-
-If the repository includes an MIT license file, the project is available under the **MIT License**.
-
----
-
-# ⭐ CampusEats
-
-### **Order Smart. Skip the Queue. Eat Fresh.**
-
-Built to make campus food ordering **faster, smarter, and more organized.**
-
-* 🌐 **Live Demo:** https://campus-eats-ruby.vercel.app/
-* 📁 **GitHub:** https://github.com/namit27y-dotcom/CampusEats
-
+This project is open source and available under the **MIT License**.
