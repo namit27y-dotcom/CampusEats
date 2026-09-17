@@ -832,7 +832,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
 
       {/* Floating Bottom Cart Bar for Quick Checkout */}
       {cart.length > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-lg z-40">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-lg z-30">
           <div
             onClick={onOpenCart}
             className="bg-zinc-900 text-white p-3.5 rounded-2xl shadow-xl shadow-zinc-900/30 border border-zinc-700 flex items-center justify-between cursor-pointer hover:bg-zinc-800 transition transform hover:-translate-y-0.5 active:scale-98"

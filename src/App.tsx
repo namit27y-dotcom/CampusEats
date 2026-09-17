@@ -78,7 +78,7 @@ const MainAppContent: React.FC = () => {
 
       {/* Floating Active Order Quick Bar for Student */}
       {currentRole === 'student' && latestActiveOrder && !isTrackingOpen && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-lg z-40 animate-in slide-in-from-bottom-4 duration-200">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-lg z-30 animate-in slide-in-from-bottom-4 duration-200">
           <div
             onClick={() => handleOpenOrderTracker(latestActiveOrder)}
             className={`p-3 sm:p-3.5 rounded-2xl shadow-xl border cursor-pointer transition flex items-center justify-between gap-2 backdrop-blur-md ${

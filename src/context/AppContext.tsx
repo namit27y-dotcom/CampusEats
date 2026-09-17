@@ -904,8 +904,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logoutUser = () => {
     localStorage.removeItem("token");
     localStorage.removeItem(STORAGE_KEYS.USER);
+    if (socketRef.current) {
+      try {
+        socketRef.current.disconnect();
+      } catch (e) {}
+      socketRef.current = null;
+    }
+    setCart([]);
     setCurrentUserState(INITIAL_USERS[0]);
     setRoleState("student");
+    window.dispatchEvent(new Event("storage"));
   };
   // Add Notification helper
   const addNotification = useCallback((notif: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => {

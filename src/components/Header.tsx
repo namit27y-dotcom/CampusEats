@@ -60,7 +60,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200 shadow-xs w-full max-w-full overflow-hidden">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200 shadow-xs w-full max-w-full">
       {/* Top Banner / Ticker */}
       <div className="bg-zinc-900 text-white text-xs px-3 sm:px-4 py-1.5 flex items-center justify-between gap-2 w-full max-w-full overflow-hidden">
         <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto whitespace-nowrap min-w-0 flex-1 no-scrollbar text-[11px] sm:text-xs">
@@ -353,7 +353,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
                         }}
                         className="w-full text-left px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-xl flex items-center justify-between cursor-pointer transition"
                       >
-                        <span>Sign Out</span>
+                        <span>Logout</span>
                         <LogOut className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -418,8 +418,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
 
       {/* Wallet Top-up Modal */}
       {showWalletModal && (
-        <div className="fixed inset-0 bg-zinc-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-zinc-200 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 bg-zinc-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-[70] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-zinc-200 animate-in fade-in zoom-in-95 duration-150 max-h-[calc(100vh-2rem)] overflow-y-auto my-auto">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
