@@ -144,7 +144,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Menu & Inventory
   const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.MENU);
-    return saved ? JSON.parse(saved) : INITIAL_MENU_ITEMS;
+    if (saved) {
+      try {
+        const parsed: MenuItem[] = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.map((item) => {
+            const initial = INITIAL_MENU_ITEMS.find((m) => m.id === item.id);
+            return {
+              ...item,
+              isVegan: item.isVegan ?? initial?.isVegan ?? false,
+              isGlutenFree: item.isGlutenFree ?? initial?.isGlutenFree ?? false,
+              isDairyFree: item.isDairyFree ?? initial?.isDairyFree ?? false,
+              isHighProtein: item.isHighProtein ?? initial?.isHighProtein ?? false,
+              dietaryTags: item.dietaryTags ?? initial?.dietaryTags ?? (item.isVeg ? ['veg'] : []),
+            };
+          });
+        }
+      } catch (e) {}
+    }
+    return INITIAL_MENU_ITEMS;
   });
   const [inventory, setInventory] = useState<InventoryItem[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.INVENTORY);
@@ -267,7 +285,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     "",
                   price: Number(backendItem.price),
                   category: resolvedCategory,
-                  isVeg: existing?.isVeg ?? true,
+                  isVeg: existing?.isVeg ?? (backendItem.is_veg ?? true),
+                  isVegan: existing?.isVegan ?? (backendItem.is_vegan ?? false),
+                  isGlutenFree: existing?.isGlutenFree ?? (backendItem.is_gluten_free ?? false),
+                  isDairyFree: existing?.isDairyFree ?? false,
+                  isHighProtein: existing?.isHighProtein ?? false,
+                  dietaryTags: existing?.dietaryTags ?? backendItem.dietary_tags ?? (existing?.isVeg ? ['veg'] : []),
                   rating: existing?.rating ?? 4.5,
                   ratingCount: existing?.ratingCount ?? 0,
                   prepTimeMinutes:

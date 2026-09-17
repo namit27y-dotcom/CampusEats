@@ -33,6 +33,8 @@ export interface CustomizationOption {
   choices: { label: string; extraPrice: number }[];
 }
 
+export type DietaryPreference = 'veg' | 'vegan' | 'gluten-free' | 'dairy-free' | 'high-protein';
+
 export interface MenuItem {
   id: string;
   canteenId: string;
@@ -42,6 +44,11 @@ export interface MenuItem {
   originalPrice?: number;
   category: FoodCategory;
   isVeg: boolean;
+  isVegan?: boolean;
+  isGlutenFree?: boolean;
+  isDairyFree?: boolean;
+  isHighProtein?: boolean;
+  dietaryTags?: DietaryPreference[];
   rating: number;
   ratingCount: number;
   prepTimeMinutes: number;

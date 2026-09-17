@@ -47,6 +47,10 @@ export const AdminPanel: React.FC = () => {
   const [formCategory, setFormCategory] = useState<FoodCategory>('snacks');
   const [formPrepTime, setFormPrepTime] = useState('8');
   const [formIsVeg, setFormIsVeg] = useState(true);
+  const [formIsVegan, setFormIsVegan] = useState(false);
+  const [formIsGlutenFree, setFormIsGlutenFree] = useState(false);
+  const [formIsDairyFree, setFormIsDairyFree] = useState(false);
+  const [formIsHighProtein, setFormIsHighProtein] = useState(false);
   const [formStock, setFormStock] = useState('30');
   const [formImage, setFormImage] = useState('');
 
@@ -66,6 +70,10 @@ export const AdminPanel: React.FC = () => {
       setFormCategory(item.category);
       setFormPrepTime(item.prepTimeMinutes.toString());
       setFormIsVeg(item.isVeg);
+      setFormIsVegan(!!item.isVegan);
+      setFormIsGlutenFree(!!item.isGlutenFree);
+      setFormIsDairyFree(!!item.isDairyFree);
+      setFormIsHighProtein(!!item.isHighProtein);
       setFormStock(item.stockQuantity.toString());
       setFormImage(item.image);
     } else {
@@ -76,6 +84,10 @@ export const AdminPanel: React.FC = () => {
       setFormCategory('snacks');
       setFormPrepTime('8');
       setFormIsVeg(true);
+      setFormIsVegan(false);
+      setFormIsGlutenFree(false);
+      setFormIsDairyFree(false);
+      setFormIsHighProtein(false);
       setFormStock('40');
       setFormImage('https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80');
     }
@@ -88,6 +100,13 @@ export const AdminPanel: React.FC = () => {
     const prepNum = parseInt(formPrepTime, 10) || 8;
     const stockNum = parseInt(formStock, 10) || 30;
 
+    const dietaryTags: string[] = [];
+    if (formIsVeg) dietaryTags.push('veg');
+    if (formIsVegan) dietaryTags.push('vegan');
+    if (formIsGlutenFree) dietaryTags.push('gluten-free');
+    if (formIsDairyFree) dietaryTags.push('dairy-free');
+    if (formIsHighProtein) dietaryTags.push('high-protein');
+
     if (editingItem) {
       updateMenuItem({
         ...editingItem,
@@ -97,6 +116,11 @@ export const AdminPanel: React.FC = () => {
         category: formCategory,
         prepTimeMinutes: prepNum,
         isVeg: formIsVeg,
+        isVegan: formIsVegan,
+        isGlutenFree: formIsGlutenFree,
+        isDairyFree: formIsDairyFree,
+        isHighProtein: formIsHighProtein,
+        dietaryTags: Array.from(new Set([...(editingItem.dietaryTags || []), ...dietaryTags])),
         stockQuantity: stockNum,
         inStock: stockNum > 0,
         image: formImage || editingItem.image,
@@ -109,6 +133,11 @@ export const AdminPanel: React.FC = () => {
         price: priceNum,
         category: formCategory,
         isVeg: formIsVeg,
+        isVegan: formIsVegan,
+        isGlutenFree: formIsGlutenFree,
+        isDairyFree: formIsDairyFree,
+        isHighProtein: formIsHighProtein,
+        dietaryTags,
         rating: 4.8,
         ratingCount: 1,
         prepTimeMinutes: prepNum,
@@ -709,17 +738,66 @@ export const AdminPanel: React.FC = () => {
                 />
               </div>
 
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="formVeg"
-                  checked={formIsVeg}
-                  onChange={(e) => setFormIsVeg(e.target.checked)}
-                  className="rounded border-zinc-300 text-emerald-600 focus:ring-0 w-4 h-4"
-                />
-                <label htmlFor="formVeg" className="font-bold text-zinc-700 cursor-pointer">
-                  Pure Vegetarian Item
+              <div className="pt-2 border-t border-zinc-100">
+                <label className="font-bold text-zinc-800 text-xs block mb-2 uppercase tracking-wider">
+                  Dietary & Nutritional Properties
                 </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex items-center gap-2 p-2 rounded-lg border border-zinc-200/80 hover:bg-zinc-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id="formVeg"
+                      checked={formIsVeg}
+                      onChange={(e) => setFormIsVeg(e.target.checked)}
+                      className="rounded border-zinc-300 text-emerald-600 focus:ring-0 w-4 h-4"
+                    />
+                    <span className="text-xs font-semibold text-zinc-700">🟢 Pure Veg</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 rounded-lg border border-zinc-200/80 hover:bg-zinc-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id="formVegan"
+                      checked={formIsVegan}
+                      onChange={(e) => setFormIsVegan(e.target.checked)}
+                      className="rounded border-zinc-300 text-emerald-600 focus:ring-0 w-4 h-4"
+                    />
+                    <span className="text-xs font-semibold text-zinc-700">🌱 Vegan</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 rounded-lg border border-zinc-200/80 hover:bg-zinc-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id="formGlutenFree"
+                      checked={formIsGlutenFree}
+                      onChange={(e) => setFormIsGlutenFree(e.target.checked)}
+                      className="rounded border-zinc-300 text-amber-600 focus:ring-0 w-4 h-4"
+                    />
+                    <span className="text-xs font-semibold text-zinc-700">🌾 Gluten-Free</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 rounded-lg border border-zinc-200/80 hover:bg-zinc-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id="formDairyFree"
+                      checked={formIsDairyFree}
+                      onChange={(e) => setFormIsDairyFree(e.target.checked)}
+                      className="rounded border-zinc-300 text-sky-600 focus:ring-0 w-4 h-4"
+                    />
+                    <span className="text-xs font-semibold text-zinc-700">🥛 Dairy-Free</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 rounded-lg border border-zinc-200/80 hover:bg-zinc-50 cursor-pointer col-span-2">
+                    <input
+                      type="checkbox"
+                      id="formHighProtein"
+                      checked={formIsHighProtein}
+                      onChange={(e) => setFormIsHighProtein(e.target.checked)}
+                      className="rounded border-zinc-300 text-purple-600 focus:ring-0 w-4 h-4"
+                    />
+                    <span className="text-xs font-semibold text-zinc-700">💪 High-Protein (≥12g)</span>
+                  </label>
+                </div>
               </div>
 
               <div className="mt-5 pt-3 border-t border-zinc-100 flex gap-2">

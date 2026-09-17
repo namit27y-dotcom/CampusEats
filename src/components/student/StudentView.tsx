@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
-import { MenuItem, FoodCategory } from '../../types';
+import { MenuItem, FoodCategory, DietaryPreference } from '../../types';
 import { AiAssistantModal } from '../AiAssistantModal';
 import { getFoodImage, handleImageError } from '../../utils/foodImages';
 import {
@@ -18,7 +18,28 @@ import {
   Sparkles,
   ArrowRight,
   ShieldCheck,
+  Leaf,
+  Wheat,
+  Dumbbell,
+  Filter,
+  X,
 } from 'lucide-react';
+
+interface DietaryOptionItem {
+  id: DietaryPreference;
+  label: string;
+  badge: string;
+  desc: string;
+  icon: string;
+}
+
+const DIETARY_OPTIONS: DietaryOptionItem[] = [
+  { id: 'veg', label: 'Pure Veg', badge: 'Pure Veg', desc: '100% Vegetarian recipes', icon: '🟢' },
+  { id: 'vegan', label: 'Vegan', badge: 'Vegan', desc: '100% plant-based, 0% dairy or animal products', icon: '🌱' },
+  { id: 'gluten-free', label: 'Gluten-Free', badge: 'Gluten-Free', desc: 'Wheat & gluten-free recipes', icon: '🌾' },
+  { id: 'dairy-free', label: 'Dairy-Free', badge: 'Dairy-Free', desc: 'Free of milk, butter, cheese, or paneer', icon: '🥛' },
+  { id: 'high-protein', label: 'High-Protein', badge: 'High-Protein', desc: 'Rich in protein for campus energy (≥12g)', icon: '💪' },
+];
 
 interface StudentViewProps {
   onOpenCart: () => void;
@@ -42,6 +63,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<FoodCategory>('all');
   const [filterVegOnly, setFilterVegOnly] = useState(false);
+  const [selectedDietary, setSelectedDietary] = useState<DietaryPreference[]>([]);
   const [maxPrice, setMaxPrice] = useState<number>(200);
   const [maxPrepTime, setMaxPrepTime] = useState<number>(30);
   const [showFiltersModal, setShowFiltersModal] = useState(false);
@@ -50,6 +72,29 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
   // Customization modal state
   const [customizingItem, setCustomizingItem] = useState<MenuItem | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+
+  const toggleDietaryFilter = (pref: DietaryPreference) => {
+    setSelectedDietary((prev) => {
+      const next = prev.includes(pref) ? prev.filter((p) => p !== pref) : [...prev, pref];
+      if (pref === 'veg') {
+        setFilterVegOnly(next.includes('veg'));
+      }
+      return next;
+    });
+  };
+
+  const handleToggleVegOnly = () => {
+    const nextVal = !filterVegOnly;
+    setFilterVegOnly(nextVal);
+    setSelectedDietary((prev) =>
+      nextVal ? (prev.includes('veg') ? prev : [...prev, 'veg']) : prev.filter((p) => p !== 'veg')
+    );
+  };
+
+  const activeFiltersCount =
+    (maxPrice < 200 ? 1 : 0) +
+    (maxPrepTime < 30 ? 1 : 0) +
+    selectedDietary.length;
 
   const categories: { id: FoodCategory; label: string }[] = [
     { id: 'all', label: 'All Items' },
@@ -76,6 +121,19 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
         return false;
       }
 
+      // Dietary preferences filter
+      if (selectedDietary.length > 0) {
+        const matchesAllDietary = selectedDietary.every((pref) => {
+          if (pref === 'veg') return item.isVeg || item.dietaryTags?.includes('veg');
+          if (pref === 'vegan') return item.isVegan || item.dietaryTags?.includes('vegan');
+          if (pref === 'gluten-free') return item.isGlutenFree || item.dietaryTags?.includes('gluten-free');
+          if (pref === 'dairy-free') return item.isDairyFree || item.dietaryTags?.includes('dairy-free');
+          if (pref === 'high-protein') return item.isHighProtein || item.dietaryTags?.includes('high-protein');
+          return false;
+        });
+        if (!matchesAllDietary) return false;
+      }
+
       // Price filter
       if (item.price > maxPrice) {
         return false;
@@ -86,7 +144,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
         return false;
       }
 
-      // Search query filter (matches name, description, tags, price)
+      // Search query filter (matches name, description, tags, price, dietary)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchesName = item.name.toLowerCase().includes(q);
@@ -95,20 +153,47 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
         const matchesPrice = q.startsWith('₹')
           ? item.price <= parseInt(q.replace('₹', ''), 10)
           : item.price.toString() === q;
-        const matchesVeg = q === 'veg' && item.isVeg;
+        const matchesVeg = (q === 'veg' || q === 'vegetarian') && item.isVeg;
+        const matchesVegan = q.includes('vegan') && (item.isVegan || item.dietaryTags?.includes('vegan'));
+        const matchesGF = (q.includes('gluten') || q === 'gf') && (item.isGlutenFree || item.dietaryTags?.includes('gluten-free'));
+        const matchesDairy = q.includes('dairy') && (item.isDairyFree || item.dietaryTags?.includes('dairy-free'));
+        const matchesProtein = q.includes('protein') && (item.isHighProtein || item.dietaryTags?.includes('high-protein'));
+        const matchesTags = item.dietaryTags?.some((t) => t.toLowerCase().includes(q));
 
-        return matchesName || matchesDesc || matchesCat || matchesPrice || matchesVeg;
+        return (
+          matchesName ||
+          matchesDesc ||
+          matchesCat ||
+          matchesPrice ||
+          matchesVeg ||
+          matchesVegan ||
+          matchesGF ||
+          matchesDairy ||
+          matchesProtein ||
+          matchesTags
+        );
       }
 
       return true;
     });
-  }, [menuItems, selectedCanteen.id, selectedCategory, filterVegOnly, maxPrice, maxPrepTime, searchQuery]);
+  }, [menuItems, selectedCanteen.id, selectedCategory, filterVegOnly, selectedDietary, maxPrice, maxPrepTime, searchQuery]);
 
   const popularItems = useMemo(() => {
-    return menuItems.filter(
-      (item) => item.canteenId === selectedCanteen.id && item.isPopular && item.inStock
-    );
-  }, [menuItems, selectedCanteen.id]);
+    return menuItems.filter((item) => {
+      if (item.canteenId !== selectedCanteen.id || !item.isPopular || !item.inStock) return false;
+      if (selectedDietary.length > 0) {
+        return selectedDietary.every((pref) => {
+          if (pref === 'veg') return item.isVeg || item.dietaryTags?.includes('veg');
+          if (pref === 'vegan') return item.isVegan || item.dietaryTags?.includes('vegan');
+          if (pref === 'gluten-free') return item.isGlutenFree || item.dietaryTags?.includes('gluten-free');
+          if (pref === 'dairy-free') return item.isDairyFree || item.dietaryTags?.includes('dairy-free');
+          if (pref === 'high-protein') return item.isHighProtein || item.dietaryTags?.includes('high-protein');
+          return false;
+        });
+      }
+      return true;
+    });
+  }, [menuItems, selectedCanteen.id, selectedDietary]);
 
   // Check how many of this item is in the cart
   const getItemQuantityInCart = (itemId: string) => {
@@ -310,7 +395,7 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
           {/* Gemini AI Assistant Button */}
           <button
             onClick={() => setShowAiModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-xs transition"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-xs transition cursor-pointer shrink-0"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
             <span>AI Suggest</span>
@@ -318,8 +403,8 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
 
           {/* Quick Veg Toggle */}
           <button
-            onClick={() => setFilterVegOnly(!filterVegOnly)}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold border transition ${
+            onClick={handleToggleVegOnly}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold border transition cursor-pointer shrink-0 ${
               filterVegOnly
                 ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
                 : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
@@ -332,14 +417,59 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
           {/* More Filters Dialog Trigger */}
           <button
             onClick={() => setShowFiltersModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 transition shadow-xs"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 transition shadow-xs cursor-pointer shrink-0"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-500" />
             <span>Filters</span>
-            {(maxPrice < 200 || maxPrepTime < 30) && (
-              <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+            {activeFiltersCount > 0 && (
+              <span className="w-4 h-4 rounded-full bg-orange-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {activeFiltersCount}
+              </span>
             )}
           </button>
+        </div>
+      </div>
+
+      {/* Dietary Preferences Filter Chips Bar */}
+      <div className="mb-4">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar w-full">
+          <div className="flex items-center gap-1 text-[11px] font-bold text-zinc-400 uppercase tracking-wider shrink-0 mr-0.5">
+            <Filter className="w-3 h-3 text-orange-500" />
+            <span>Diet:</span>
+          </div>
+
+          {DIETARY_OPTIONS.map((opt) => {
+            const isActive = selectedDietary.includes(opt.id);
+            return (
+              <button
+                key={opt.id}
+                onClick={() => toggleDietaryFilter(opt.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer border ${
+                  isActive
+                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs font-bold'
+                    : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300'
+                }`}
+                title={opt.desc}
+              >
+                <span>{opt.icon}</span>
+                <span>{opt.label}</span>
+                {isActive && <Check className="w-3 h-3 text-white" />}
+              </button>
+            );
+          })}
+
+          {selectedDietary.length > 0 && (
+            <button
+              onClick={() => {
+                setSelectedDietary([]);
+                setFilterVegOnly(false);
+              }}
+              className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 font-bold px-2 py-1 whitespace-nowrap cursor-pointer hover:underline shrink-0"
+            >
+              <X className="w-3 h-3" />
+              Reset ({selectedDietary.length})
+            </button>
+          )}
         </div>
       </div>
 
@@ -388,10 +518,25 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                       onError={(e) => handleImageError(e, item.name, item.category)}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />
-                    <div className="absolute top-2 left-2 flex items-center gap-1">
+                    <div className="absolute top-2 left-2 flex items-center gap-1 flex-wrap max-w-[85%]">
                       {item.isVeg && (
-                        <span className="bg-white/95 backdrop-blur-xs p-1 rounded-md shadow-xs flex items-center justify-center border border-emerald-300">
+                        <span className="bg-white/95 backdrop-blur-xs p-1 rounded-md shadow-xs flex items-center justify-center border border-emerald-300" title="Pure Veg">
                           <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                        </span>
+                      )}
+                      {item.isVegan && (
+                        <span className="bg-emerald-700/90 text-white backdrop-blur-xs text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-xs flex items-center gap-0.5">
+                          <Leaf className="w-2.5 h-2.5" /> Vegan
+                        </span>
+                      )}
+                      {item.isGlutenFree && (
+                        <span className="bg-amber-600/90 text-white backdrop-blur-xs text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-xs flex items-center gap-0.5">
+                          <Wheat className="w-2.5 h-2.5" /> GF
+                        </span>
+                      )}
+                      {item.isHighProtein && (
+                        <span className="bg-purple-700/90 text-white backdrop-blur-xs text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-xs flex items-center gap-0.5">
+                          <Dumbbell className="w-2.5 h-2.5" /> Protein
                         </span>
                       )}
                       {item.offerTag && (
@@ -503,17 +648,20 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
             </div>
             <h3 className="font-bold text-zinc-800 text-sm">No items found</h3>
             <p className="text-xs text-zinc-500 mt-1 max-w-xs mx-auto">
-              Try adjusting your search query, clearing filters, or switching to another campus canteen.
+              {selectedDietary.length > 0
+                ? `No dishes match your active dietary preferences (${selectedDietary.join(', ')}). Try clearing them to see more items.`
+                : 'Try adjusting your search query, clearing filters, or switching to another campus canteen.'}
             </p>
             <button
               onClick={() => {
                 setSearchQuery('');
                 setSelectedCategory('all');
                 setFilterVegOnly(false);
+                setSelectedDietary([]);
                 setMaxPrice(200);
                 setMaxPrepTime(30);
               }}
-              className="mt-4 px-4 py-2 rounded-xl bg-orange-500 text-white text-xs font-bold hover:bg-orange-600 transition shadow-sm shadow-orange-500/20"
+              className="mt-4 px-4 py-2 rounded-xl bg-orange-500 text-white text-xs font-bold hover:bg-orange-600 transition shadow-sm shadow-orange-500/20 cursor-pointer"
             >
               Reset All Filters
             </button>
@@ -535,17 +683,42 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                   <div className="flex-1 flex flex-col justify-between min-w-0">
                     <div>
                       {/* Top meta tags */}
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="p-0.5 border border-emerald-300 rounded-xs flex items-center justify-center shrink-0">
-                          <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                        </span>
+                      <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                        {item.isVeg && (
+                          <span className="p-0.5 border border-emerald-300 rounded-xs flex items-center justify-center shrink-0" title="Pure Veg">
+                            <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                          </span>
+                        )}
+                        {item.isVegan && (
+                          <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                            <Leaf className="w-2.5 h-2.5 text-emerald-600" />
+                            Vegan
+                          </span>
+                        )}
+                        {item.isGlutenFree && (
+                          <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                            <Wheat className="w-2.5 h-2.5 text-amber-600" />
+                            Gluten-Free
+                          </span>
+                        )}
+                        {item.isDairyFree && !item.isVegan && (
+                          <span className="text-[10px] font-semibold text-sky-800 bg-sky-50 border border-sky-200/80 px-1.5 py-0.5 rounded-md">
+                            🥛 Dairy-Free
+                          </span>
+                        )}
+                        {item.isHighProtein && (
+                          <span className="text-[10px] font-semibold text-purple-800 bg-purple-50 border border-purple-200/80 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                            <Dumbbell className="w-2.5 h-2.5 text-purple-600" />
+                            High-Protein
+                          </span>
+                        )}
                         {item.isOffer && (
-                          <span className="text-[10px] font-bold text-orange-700 bg-orange-50 px-1.5 py-0.2 rounded">
+                          <span className="text-[10px] font-bold text-orange-700 bg-orange-50 px-1.5 py-0.5 rounded-md">
                             {item.offerTag || 'Special'}
                           </span>
                         )}
                         {isLowStock && (
-                          <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                          <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
                             <AlertCircle className="w-2.5 h-2.5" />
                             Only {item.stockQuantity} left
                           </span>
@@ -701,6 +874,37 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                 <div className="text-xs text-zinc-500 font-mono mt-0.5">
                   Base Price: ₹{customizingItem.price}
                 </div>
+                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                  {customizingItem.isVeg && (
+                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                      Veg
+                    </span>
+                  )}
+                  {customizingItem.isVegan && (
+                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                      <Leaf className="w-2.5 h-2.5 text-emerald-600" />
+                      Vegan
+                    </span>
+                  )}
+                  {customizingItem.isGlutenFree && (
+                    <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                      <Wheat className="w-2.5 h-2.5 text-amber-600" />
+                      Gluten-Free
+                    </span>
+                  )}
+                  {customizingItem.isDairyFree && !customizingItem.isVegan && (
+                    <span className="text-[10px] font-bold text-sky-800 bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded-md">
+                      🥛 Dairy-Free
+                    </span>
+                  )}
+                  {customizingItem.isHighProtein && (
+                    <span className="text-[10px] font-bold text-purple-800 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                      <Dumbbell className="w-2.5 h-2.5 text-purple-600" />
+                      High-Protein
+                    </span>
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => setCustomizingItem(null)}
@@ -795,7 +999,69 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
             </div>
 
             <div className="mt-4 space-y-4">
+              {/* Dietary Preferences Section */}
               <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <Filter className="w-3.5 h-3.5 text-orange-500" />
+                    Dietary Preferences
+                  </span>
+                  {selectedDietary.length > 0 && (
+                    <button
+                      onClick={() => {
+                        setSelectedDietary([]);
+                        setFilterVegOnly(false);
+                      }}
+                      className="text-[11px] text-orange-600 hover:text-orange-700 font-semibold cursor-pointer"
+                    >
+                      Clear ({selectedDietary.length})
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-zinc-500 mb-2">
+                  Toggle items based on dietary and nutritional preferences:
+                </p>
+
+                <div className="space-y-1.5">
+                  {DIETARY_OPTIONS.map((opt) => {
+                    const isChecked = selectedDietary.includes(opt.id);
+                    return (
+                      <div
+                        key={opt.id}
+                        onClick={() => toggleDietaryFilter(opt.id)}
+                        className={`flex items-center justify-between p-2.5 rounded-xl border text-xs cursor-pointer transition select-none ${
+                          isChecked
+                            ? 'bg-emerald-50/80 border-emerald-400 text-emerald-950 font-bold'
+                            : 'bg-zinc-50/70 border-zinc-200/80 text-zinc-700 hover:bg-zinc-100/70'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span
+                            className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition ${
+                              isChecked
+                                ? 'bg-emerald-600 border-emerald-600 text-white'
+                                : 'border-zinc-300 bg-white'
+                            }`}
+                          >
+                            {isChecked && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span>{opt.icon}</span>
+                              <span className="font-bold">{opt.label}</span>
+                            </div>
+                            <div className="text-[10px] text-zinc-500 font-normal truncate mt-0.5">
+                              {opt.desc}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-zinc-100">
                 <div className="flex items-center justify-between text-xs font-bold text-zinc-700">
                   <span>Max Price</span>
                   <span className="font-mono text-orange-600 font-bold">₹{maxPrice}</span>
@@ -826,18 +1092,6 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                   className="w-full mt-2 accent-orange-500 cursor-pointer"
                 />
               </div>
-
-              <div className="pt-2 border-t border-zinc-100">
-                <label className="flex items-center gap-2 text-xs font-bold text-zinc-700 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={filterVegOnly}
-                    onChange={(e) => setFilterVegOnly(e.target.checked)}
-                    className="rounded border-zinc-300 text-emerald-600 focus:ring-0 w-4 h-4"
-                  />
-                  <span>Show Pure Vegetarian Items Only</span>
-                </label>
-              </div>
             </div>
 
             <div className="mt-5 flex gap-2">
@@ -846,14 +1100,15 @@ export const StudentView: React.FC<StudentViewProps> = ({ onOpenCart, onOpenActi
                   setMaxPrice(200);
                   setMaxPrepTime(30);
                   setFilterVegOnly(false);
+                  setSelectedDietary([]);
                 }}
-                className="flex-1 py-2 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-600 hover:bg-zinc-50"
+                className="flex-1 py-2.5 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-600 hover:bg-zinc-50 cursor-pointer"
               >
                 Reset
               </button>
               <button
                 onClick={() => setShowFiltersModal(false)}
-                className="flex-1 py-2 rounded-xl bg-zinc-900 text-white text-xs font-bold hover:bg-zinc-800"
+                className="flex-1 py-2.5 rounded-xl bg-zinc-900 text-white text-xs font-bold hover:bg-zinc-800 cursor-pointer"
               >
                 Apply Filters
               </button>
