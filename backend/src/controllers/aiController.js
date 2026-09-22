@@ -2,6 +2,32 @@ import { GoogleGenAI } from "@google/genai";
 import pool from "../config/db.js";
 
 /**
+ * Safely infer vegetarian status from item attributes without querying non-existent columns.
+ */
+function inferIsVeg(item) {
+    const text = `${item.name || ''} ${item.description || ''} ${item.category || ''}`.toLowerCase();
+    const nonVegKeywords = ['chicken', 'egg', 'fish', 'mutton', 'meat', 'prawn', 'pork', 'beef', 'non-veg', 'nonveg'];
+    return !nonVegKeywords.some(kw => text.includes(kw));
+}
+
+/**
+ * Safely infer prep time in minutes based on category without querying non-existent columns.
+ */
+function inferPrepTime(item) {
+    const category = (item.category || '').toLowerCase();
+    if (category.includes('beverage') || category.includes('drink') || category.includes('tea') || category.includes('coffee')) {
+        return 3;
+    }
+    if (category.includes('snack') || category.includes('breakfast')) {
+        return 5;
+    }
+    if (category.includes('meal') || category.includes('combo') || category.includes('lunch') || category.includes('thali')) {
+        return 10;
+    }
+    return 8;
+}
+
+/**
  * POST /api/ai/recommend
  * Secure backend-driven AI meal recommendations using Gemini API
  */
@@ -30,14 +56,12 @@ export const getAiRecommendations = async (req, res) => {
         let menuQuery = `
             SELECT 
                 id, 
+                canteen_id,
                 name, 
                 description, 
                 price, 
                 category, 
-                is_veg, 
-                COALESCE(stock_quantity, 100) AS stock_quantity, 
-                COALESCE(prep_time, 8) AS prep_time,
-                canteen_id
+                COALESCE(stock_quantity, 100) AS stock_quantity
             FROM menu_items 
             WHERE is_available = 1`;
         const queryParams = [];
@@ -60,33 +84,39 @@ export const getAiRecommendations = async (req, res) => {
         }
 
         // 3. Fetch student's recent completed order history (Personalization)
-        const [recentHistory] = await pool.query(
-            `SELECT m.name, oi.quantity
-             FROM orders o
-             JOIN order_items oi ON o.id = oi.order_id
-             JOIN menu_items m ON oi.menu_item_id = m.id
-             WHERE o.user_id = ? AND o.status = 'completed'
-             ORDER BY o.created_at DESC
-             LIMIT 5`,
-            [userId]
-        );
-
-        const orderHistoryNames = recentHistory.map(h => h.name).join(", ");
+        let orderHistoryNames = "";
+        try {
+            const [recentHistory] = await pool.query(
+                `SELECT m.name, oi.quantity
+                 FROM orders o
+                 JOIN order_items oi ON o.id = oi.order_id
+                 JOIN menu_items m ON oi.menu_item_id = m.id
+                 WHERE o.user_id = ? AND o.status = 'completed'
+                 ORDER BY o.created_at DESC
+                 LIMIT 5`,
+                [userId]
+            );
+            orderHistoryNames = (recentHistory || []).map(h => h.name).join(", ");
+        } catch (historyErr) {
+            // Non-critical, continue without history if orders table is empty or error occurs
+            orderHistoryNames = "";
+        }
 
         // Build simplified catalog for LLM (safe from any database secrets)
         const catalogForLlm = availableMenuItems.map(m => ({
             id: m.id,
             name: m.name,
+            description: m.description || "",
             price: Number(m.price),
             category: m.category || "general",
-            isVeg: Boolean(m.is_veg),
-            prepTimeMinutes: Number(m.prep_time || 8)
+            isVeg: inferIsVeg(m),
+            prepTimeMinutes: inferPrepTime(m)
         }));
 
         const apiKey = process.env.GEMINI_API_KEY;
         let aiResult = null;
 
-        if (apiKey && apiKey !== "MY_GEMINI_API_KEY") {
+        if (apiKey && apiKey !== "MY_GEMINI_API_KEY" && apiKey !== "YOUR_GEMINI_API_KEY") {
             try {
                 const ai = new GoogleGenAI({ apiKey });
                 const systemInstruction = `You are CampusEats AI Cafeteria Assistant. 
@@ -96,17 +126,18 @@ RULES:
 1. ONLY recommend items that exist in the Menu Catalog. Use their exact numeric "id".
 2. NEVER hallucinate food items or invent new item IDs.
 3. NEVER invent specific calorie, fat, or carb gram numbers since nutrition data is not in the database.
-4. Output MUST be valid JSON with this schema:
+4. If the user asks general questions about the menu, vegetarian options, items under a budget, combos, or tastes, select relevant items from the catalog and explain clearly in the summary and item reasons.
+5. Output MUST be valid JSON matching this schema:
 {
   "recommendations": [
     {
       "menuItemId": <number>,
       "name": "<string>",
-      "reason": "<short explanation why this fits budget/diet/speed>",
+      "reason": "<short explanation why this fits budget/diet/speed/preference>",
       "estimatedWaitMinutes": <number>
     }
   ],
-  "summary": "<one sentence summary of the recommendations>"
+  "summary": "<one or two sentence helpful and friendly response answering the student's question>"
 }`;
 
                 const userContent = `User Request: "${trimmedPrompt}"
@@ -129,8 +160,15 @@ Provide your response strictly in the JSON format requested.`;
                     }
                 });
 
-                const responseText = response.text?.trim();
+                let responseText = response.text?.trim() || "";
                 if (responseText) {
+                    // Clean markdown fences or surrounding text if present
+                    responseText = responseText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+                    const firstBrace = responseText.indexOf('{');
+                    const lastBrace = responseText.lastIndexOf('}');
+                    if (firstBrace !== -1 && lastBrace !== -1) {
+                        responseText = responseText.substring(firstBrace, lastBrace + 1);
+                    }
                     aiResult = JSON.parse(responseText);
                 }
             } catch (geminiErr) {
@@ -144,8 +182,7 @@ Provide your response strictly in the JSON format requested.`;
                 trimmedPrompt,
                 catalogForLlm,
                 budget,
-                dietary,
-                recentHistory
+                dietary
             );
         }
 
@@ -160,9 +197,9 @@ Provide your response strictly in the JSON format requested.`;
                     menuItemId: matchedDbItem.id,
                     name: matchedDbItem.name,
                     price: Number(matchedDbItem.price),
-                    isVeg: Boolean(matchedDbItem.is_veg),
+                    isVeg: inferIsVeg(matchedDbItem),
                     reason: String(rec.reason || `Fits your preferences at ₹${matchedDbItem.price}`),
-                    estimatedWaitMinutes: Number(rec.estimatedWaitMinutes || matchedDbItem.prep_time || 8)
+                    estimatedWaitMinutes: Number(rec.estimatedWaitMinutes || inferPrepTime(matchedDbItem))
                 });
             }
         }
@@ -173,7 +210,7 @@ Provide your response strictly in the JSON format requested.`;
                 recommendations: validatedRecommendations,
                 summary: validatedRecommendations.length > 0 
                     ? (aiResult.summary || `Found ${validatedRecommendations.length} matching meal options.`)
-                    : "No matching menu items found for your specific criteria."
+                    : (aiResult.summary || "No matching menu items found for your specific criteria.")
             }
         });
 
@@ -189,8 +226,8 @@ Provide your response strictly in the JSON format requested.`;
 /**
  * Deterministic database recommendation engine based on real menu attributes
  */
-function generateDatabaseHeuristicRecommendations(prompt, catalog, budget, dietary, history) {
-    const lower = prompt.toLowerCase();
+function generateDatabaseHeuristicRecommendations(prompt, catalog, budget, dietary) {
+    const lower = (prompt || "").toLowerCase();
     let filtered = [...catalog];
 
     // Budget filter
@@ -210,12 +247,24 @@ function generateDatabaseHeuristicRecommendations(prompt, catalog, budget, dieta
     if (isFastQuery) {
         filtered.sort((a, b) => a.prepTimeMinutes - b.prepTimeMinutes);
     } else {
-        // Sort by popularity/price
-        filtered.sort((a, b) => a.price - b.price);
+        // Keyword match scoring
+        const stopWords = ['and', 'for', 'the', 'what', 'can', 'eat', 'under', 'which', 'items', 'are', 'you', 'have', 'show', 'suggest', 'food'];
+        const keywords = lower.split(/[\s,?.!]+/).filter(w => w.length > 2 && !stopWords.includes(w));
+        if (keywords.length > 0) {
+            filtered.sort((a, b) => {
+                const aText = `${a.name} ${a.description} ${a.category}`.toLowerCase();
+                const bText = `${b.name} ${b.description} ${b.category}`.toLowerCase();
+                const aMatches = keywords.filter(kw => aText.includes(kw)).length;
+                const bMatches = keywords.filter(kw => bText.includes(kw)).length;
+                return bMatches - aMatches;
+            });
+        } else {
+            filtered.sort((a, b) => a.price - b.price);
+        }
     }
 
-    const topThree = filtered.slice(0, 3);
-    const recommendations = topThree.map(item => ({
+    const topItems = filtered.slice(0, 4);
+    const recommendations = topItems.map(item => ({
         menuItemId: item.id,
         name: item.name,
         reason: maxBudget 
@@ -226,10 +275,21 @@ function generateDatabaseHeuristicRecommendations(prompt, catalog, budget, dieta
         estimatedWaitMinutes: item.prepTimeMinutes
     }));
 
+    let summaryText = "";
+    if (recommendations.length > 0) {
+        if (maxBudget) {
+            summaryText = `Found ${recommendations.length} great option${recommendations.length > 1 ? 's' : ''} under ₹${maxBudget}.`;
+        } else if (isVegQuery) {
+            summaryText = `Found ${recommendations.length} delicious vegetarian option${recommendations.length > 1 ? 's' : ''}.`;
+        } else {
+            summaryText = `Here are ${recommendations.length} top recommendations matching "${prompt}".`;
+        }
+    } else {
+        summaryText = "No matching menu items found for your specific criteria.";
+    }
+
     return {
         recommendations,
-        summary: recommendations.length > 0 
-            ? `Here are ${recommendations.length} top options matching "${prompt}".`
-            : "No items match your exact filters."
+        summary: summaryText
     };
 }
