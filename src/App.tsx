@@ -81,43 +81,49 @@ const MainAppContent: React.FC = () => {
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-lg z-30 animate-in slide-in-from-bottom-4 duration-200">
           <div
             onClick={() => handleOpenOrderTracker(latestActiveOrder)}
-            className={`p-3 sm:p-3.5 rounded-2xl shadow-xl border cursor-pointer transition flex items-center justify-between gap-2 backdrop-blur-md ${
+            className={`p-3 sm:p-3.5 rounded-2xl shadow-xl border cursor-pointer transition flex items-center justify-between gap-3 backdrop-blur-md ${
               latestActiveOrder.status === 'READY'
                 ? 'bg-emerald-600/95 border-emerald-400 text-white shadow-emerald-600/30 animate-pulse'
                 : 'bg-zinc-900/95 border-zinc-700 text-white shadow-zinc-950/40'
             }`}
           >
-            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+            {/* Left: Order Status & Time */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 text-xs font-bold truncate">
+                {latestActiveOrder.status === 'READY' ? (
+                  <span className="flex items-center gap-1 text-emerald-100 font-extrabold truncate">
+                    <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-300" />
+                    READY AT {latestActiveOrder.pickupCounter.toUpperCase()}!
+                  </span>
+                ) : (
+                  <span className="truncate text-zinc-100">
+                    Pre-Order in Progress • <span className="text-orange-400 font-extrabold">{latestActiveOrder.status}</span>
+                  </span>
+                )}
+              </div>
+              <div className="text-[10px] sm:text-[11px] text-zinc-300 opacity-90 flex items-center gap-1 truncate mt-0.5">
+                <Clock className="w-3 h-3 text-orange-300 shrink-0" />
+                <span className="truncate">Est: {latestActiveOrder.estimatedReadyTime} • Tap to view QR</span>
+              </div>
+            </div>
+
+            {/* Right: Prominent Bold Token & View CTA */}
+            <div className="flex items-center gap-2 shrink-0">
               <div
-                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center font-mono font-black text-sm sm:text-base shrink-0 shadow-sm ${
+                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl font-mono font-black text-xs sm:text-sm tracking-wide shadow-xs flex items-center justify-center shrink-0 ${
                   latestActiveOrder.status === 'READY'
                     ? 'bg-white text-emerald-800'
                     : 'bg-orange-500 text-white'
                 }`}
+                title={`Order Token ${latestActiveOrder.tokenNumber}`}
               >
                 {latestActiveOrder.tokenNumber}
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 text-xs font-bold truncate">
-                  {latestActiveOrder.status === 'READY' ? (
-                    <span className="flex items-center gap-1 text-emerald-100 truncate">
-                      <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                      ORDER READY AT {latestActiveOrder.pickupCounter.toUpperCase()}!
-                    </span>
-                  ) : (
-                    <span className="truncate">Pre-Order in Progress • {latestActiveOrder.status}</span>
-                  )}
-                </div>
-                <div className="text-[10px] sm:text-[11px] opacity-80 flex items-center gap-1 truncate mt-0.5">
-                  <Clock className="w-3 h-3 text-orange-300 shrink-0" />
-                  <span className="truncate">Est: {latestActiveOrder.estimatedReadyTime} • Tap to view QR</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-1 bg-white/15 px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold shrink-0">
-              <span>View</span>
-              <ChevronRight className="w-4 h-4" />
+              <div className="flex items-center gap-0.5 bg-white/15 hover:bg-white/25 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-bold shrink-0 transition">
+                <span>View</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </div>
             </div>
           </div>
         </div>

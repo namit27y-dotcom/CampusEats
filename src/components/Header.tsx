@@ -68,7 +68,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
   });
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200 shadow-xs w-full max-w-full">
+    <>
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200 shadow-xs w-full max-w-full">
       {/* Top Banner / Ticker */}
       <div className="bg-zinc-900 text-white text-xs px-3 sm:px-4 py-1.5 flex items-center justify-between gap-2 w-full max-w-full overflow-hidden">
         <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto whitespace-nowrap min-w-0 flex-1 no-scrollbar text-[11px] sm:text-xs">
@@ -410,74 +411,85 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenActiveOrder, o
           </div>
         </div>
       </nav>
+    </header>
 
-      {/* Wallet Top-up Modal */}
-      {showWalletModal && (
-        <div className="fixed inset-0 bg-zinc-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-[70] overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-zinc-200 animate-in fade-in zoom-in-95 duration-150 max-h-[calc(100vh-2rem)] overflow-y-auto my-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                  <Wallet className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-zinc-900">Campus Wallet</h3>
-                  <p className="text-[11px] text-zinc-500">Fast 1-tap cashless pre-orders</p>
-                </div>
+    {/* Wallet Top-up Modal (Decoupled from sticky header for perfect viewport centering) */}
+    {showWalletModal && (
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-[100] overflow-y-auto"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setShowWalletModal(false);
+        }}
+      >
+        <div
+          className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-zinc-200 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto relative z-10"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <Wallet className="w-4 h-4" />
               </div>
-              <button
-                onClick={() => setShowWalletModal(false)}
-                className="p-1 text-zinc-400 hover:text-zinc-600 rounded-lg cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200">
-              <div className="text-xs text-emerald-800 font-medium">Current Balance</div>
-              <div className="text-3xl font-extrabold text-emerald-950 mt-1 font-mono">
-                ₹{currentUser.walletBalance}
-              </div>
-              <div className="text-[11px] text-emerald-700 mt-1">
-                Linked to {currentUser.name} ({currentUser.studentId})
+              <div>
+                <h3 className="font-bold text-sm text-zinc-900">Campus Wallet</h3>
+                <p className="text-[11px] text-zinc-500">Fast 1-tap cashless pre-orders</p>
               </div>
             </div>
+            <button
+              onClick={() => setShowWalletModal(false)}
+              aria-label="Close Campus Wallet"
+              className="p-1.5 text-zinc-400 hover:text-zinc-600 rounded-lg cursor-pointer hover:bg-zinc-100 transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
 
-            <div className="mt-4">
-              <label className="text-xs font-bold text-zinc-700">Quick Recharge Amount</label>
-              <div className="grid grid-cols-4 gap-2 mt-1.5">
-                {['100', '200', '500', '1000'].map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => setTopUpAmount(amt)}
-                    className={`py-1.5 text-xs font-bold rounded-xl border transition cursor-pointer ${
-                      topUpAmount === amt
-                        ? 'bg-orange-500 border-orange-500 text-white shadow-sm shadow-orange-500/20'
-                        : 'bg-zinc-50 border-zinc-200 text-zinc-700 hover:bg-zinc-100'
-                    }`}
-                  >
-                    +₹{amt}
-                  </button>
-                ))}
-              </div>
+          <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200">
+            <div className="text-xs text-emerald-800 font-medium">Current Balance</div>
+            <div className="text-3xl font-extrabold text-emerald-950 mt-1 font-mono">
+              ₹{currentUser.walletBalance}
             </div>
-
-            <div className="mt-5 flex gap-2">
-              <button
-                onClick={() => {
-                  topUpWallet(parseInt(topUpAmount, 10));
-                  setShowWalletModal(false);
-                }}
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 transition cursor-pointer"
-              >
-                <PlusCircle className="w-4 h-4" />
-                Add ₹{topUpAmount} via Campus UPI
-              </button>
+            <div className="text-[11px] text-emerald-700 mt-1">
+              Linked to {currentUser.name} ({currentUser.studentId})
             </div>
           </div>
+
+          <div className="mt-4">
+            <label className="text-xs font-bold text-zinc-700">Quick Recharge Amount</label>
+            <div className="grid grid-cols-4 gap-2 mt-1.5">
+              {['100', '200', '500', '1000'].map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => setTopUpAmount(amt)}
+                  className={`py-2 text-xs font-bold rounded-xl border transition cursor-pointer ${
+                    topUpAmount === amt
+                      ? 'bg-orange-500 border-orange-500 text-white shadow-sm shadow-orange-500/20'
+                      : 'bg-zinc-50 border-zinc-200 text-zinc-700 hover:bg-zinc-100'
+                  }`}
+                >
+                  +₹{amt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-5 flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                topUpWallet(parseInt(topUpAmount, 10));
+                setShowWalletModal(false);
+              }}
+              className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 transition cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4" />
+              Add ₹{topUpAmount} via Campus UPI
+            </button>
+          </div>
         </div>
-      )}
-    </header>
-  );
+      </div>
+    )}
+  </>
+);
 };
